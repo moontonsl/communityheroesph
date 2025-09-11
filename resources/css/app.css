@@ -2,17 +2,23 @@
 
 @plugin 'tailwindcss-animate';
 
+/* Global Font Family */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+/* TT Dugs Font - Using similar font */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @custom-variant dark (&:is(.dark *));
 
-/* Global Font Family */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
-
 @theme {
     --font-sans:
         'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    
+    --font-tt-dugs:
+        'Orbitron', ui-sans-serif, system-ui, sans-serif;
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -188,3 +194,10 @@
         background-attachment: scroll;
     }
 }
+
+/* TT Dugs font class */
+.font-tt-dugs {
+    font-family: 'Orbitron', ui-sans-serif, system-ui, sans-serif;
+}
+
+

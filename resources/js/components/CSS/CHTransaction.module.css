@@ -1,0 +1,105 @@
+/* Portal specific styles */
+.portalCard {
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    transition: all 0.3s ease;
+}
+
+.portalCard:hover {
+    border-color: rgba(234, 179, 8, 0.6);
+    box-shadow: 0 8px 32px rgba(234, 179, 8, 0.1);
+}
+
+.statCard {
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    transition: all 0.3s ease;
+}
+
+.statCard:hover {
+    transform: translateY(-2px);
+    border-color: rgba(234, 179, 8, 0.6);
+    box-shadow: 0 8px 32px rgba(234, 179, 8, 0.1);
+}
+
+.actionButton {
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.actionButton:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.actionButton.active {
+    border-color: rgba(234, 179, 8, 0.5);
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.2);
+}
+
+/* Table styles */
+.portalTable {
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+}
+
+.tableRow:hover {
+    background: rgba(55, 65, 81, 0.5);
+}
+
+.tableGrid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr 1.2fr 1.2fr 0.8fr 1fr;
+    gap: 1rem;
+    align-items: center;
+    width: 100%;
+}
+
+/* Responsive design for portal */
+@media (max-width: 1024px) {
+    .responsiveGrid7 {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+    }
+    
+    .responsiveGrid7 > div:nth-child(n+4) {
+        display: none;
+    }
+    
+    .responsiveGrid7 > div:nth-child(1),
+    .responsiveGrid7 > div:nth-child(6),
+    .responsiveGrid7 > div:nth-child(7) {
+        display: block;
+    }
+}
+
+@media (max-width: 768px) {
+    .responsiveGrid5 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .responsiveGrid5 > div:nth-child(5) {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 640px) {
+    .responsiveGrid5 {
+        grid-template-columns: 1fr;
+    }
+    
+    .responsiveGrid5 > div:nth-child(5) {
+        grid-column: span 1;
+    }
+    
+    .responsiveFlexWrap {
+        flex-direction: column;
+    }
+    
+    .responsiveFlexWrap > button {
+        width: 100%;
+        text-align: center;
+    }
+}

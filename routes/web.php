@@ -16,6 +16,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 });
+Route::get('/Transaction', function () {
+    return Inertia::render('ch-transaction/chtransaction');
+})->name('CHTransaction');
+
+Route::get('/MyBarangay', function () {
+    return Inertia::render('portal/chportal');
+})->name('CHPortal');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
