@@ -1,6 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { LogOut, User } from 'lucide-react';
 
 export default function Header() {
+    const { auth } = usePage().props;
     return (
         <>
             <header className="bg-black text-white shadow-lg sticky top-0 z-50">
@@ -24,8 +26,29 @@ export default function Header() {
                             </div>
                         </div>
                         
-                        {/* Right Side - MLBB Logo */}
-                        <div className="flex items-center">
+                        {/* Right Side - User Menu and MLBB Logo */}
+                        <div className="flex items-center space-x-4">
+                            {/* User Info and Logout */}
+                            {auth?.user && (
+                                <div className="flex items-center space-x-3">
+                                    <div className="flex items-center space-x-2">
+                                        <User className="w-5 h-5 text-yellow-400" />
+                                        <span className="text-sm text-gray-300">
+                                            {auth.user.name}
+                                        </span>
+                                    </div>
+                                    <Link
+                                        href="/logout"
+                                        method="post"
+                                        className="flex items-center space-x-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors duration-200"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        <span className="text-sm font-medium">Logout</span>
+                                    </Link>
+                                </div>
+                            )}
+                            
+                            {/* MLBB Logo */}
                             <img 
                                 src="/images/homepage/mlbb-logo.png" 
                                 alt="Mobile Legends Bang Bang Logo" 
