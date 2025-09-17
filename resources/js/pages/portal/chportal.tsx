@@ -2,6 +2,8 @@ import { Head, Link } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import Header from '@/pages/partials/header';
 import ViewInfoModal from './modal/viewInfo';
+import ApprovedModal from './modal/approvedModal';
+import RejectedModal from './modal/rejectedModal';
 import styles from '@/components/CSS/CHTransaction.module.css';
 
 interface BarangayData {
@@ -24,6 +26,8 @@ export default function CHPortal() {
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isApprovedModalOpen, setIsApprovedModalOpen] = useState(false);
+    const [isRejectedModalOpen, setIsRejectedModalOpen] = useState(false);
     const [selectedBarangay, setSelectedBarangay] = useState<BarangayData | null>(null);
 
     // Sample data - in a real app this would come from props or API
@@ -114,11 +118,27 @@ export default function CHPortal() {
     // Handle view application click
     const handleViewApplication = (barangay: BarangayData) => {
         setSelectedBarangay(barangay);
-        setIsModalOpen(true);
+        if (barangay.status === 'Approved') {
+            setIsApprovedModalOpen(true);
+        } else if (barangay.status === 'Rejected') {
+            setIsRejectedModalOpen(true);
+        } else {
+            setIsModalOpen(true);
+        }
     };
 
     const closeModal = () => {
         setIsModalOpen(false);
+        setSelectedBarangay(null);
+    };
+
+    const closeApprovedModal = () => {
+        setIsApprovedModalOpen(false);
+        setSelectedBarangay(null);
+    };
+
+    const closeRejectedModal = () => {
+        setIsRejectedModalOpen(false);
         setSelectedBarangay(null);
     };
 
@@ -442,6 +462,20 @@ export default function CHPortal() {
             <ViewInfoModal 
                 isOpen={isModalOpen}
                 onClose={closeModal}
+                barangayData={selectedBarangay}
+            />
+
+            {/* Approved Modal */}
+            <ApprovedModal 
+                isOpen={isApprovedModalOpen}
+                onClose={closeApprovedModal}
+                barangayData={selectedBarangay}
+            />
+
+            {/* Rejected Modal */}
+            <RejectedModal 
+                isOpen={isRejectedModalOpen}
+                onClose={closeRejectedModal}
                 barangayData={selectedBarangay}
             />
         </>
