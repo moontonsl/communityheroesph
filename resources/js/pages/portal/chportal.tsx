@@ -2,21 +2,250 @@ import { Head, Link } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import Header from '@/pages/partials/header';
 import ViewInfoModal from './modal/viewInfo';
+import ViewEventModal from './modal/viewEvent';
 import styles from '@/components/CSS/CHTransaction.module.css';
 
 interface BarangayData {
-    id: string;
-    barangay: string;
-    city: string;
-    province: string;
-    region: string;
-    applicant: string;
-    status: string;
+    id: number;
+    submission_id: string;
+    barangay_name: string;
+    municipality_name: string;
+    province_name: string;
+    region_name: string;
+    second_party_name: string;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW';
+    tier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
+    successful_events_count: number;
+    tier_updated_at?: string;
+    stage: 'NEW' | 'RENEWAL';
+    date_signed: string;
+    position: string;
+    zip_code?: string;
+    population?: number;
+    moa_file_path: string;
+    moa_file_name: string;
+    rejection_reason?: string;
+    admin_notes?: string;
+    approved_by?: number;
+    approved_at?: string;
+    reviewed_by?: number;
+    reviewed_at?: string;
+    created_at: string;
+    updated_at: string;
+    region?: {
+        id: number;
+        name: string;
+        code: string;
+    };
+    province?: {
+        id: number;
+        name: string;
+        code: string;
+    };
+    municipality?: {
+        id: number;
+        name: string;
+        code: string;
+    };
+    barangay?: {
+        id: number;
+        name: string;
+        psgc_code: string;
+        population?: number;
+    };
+    approvedBy?: {
+        id: number;
+        name: string;
+        email: string;
+    };
+    reviewedBy?: {
+        id: number;
+        name: string;
+        email: string;
+    };
 }
 
-export default function CHPortal() {
+interface EventData {
+    id: number;
+    event_id: string;
+    barangay_submission_id: number;
+    applied_by: number;
+    event_name: string;
+    event_description: string;
+    event_date: string;
+    event_start_time: string;
+    event_end_time: string;
+    event_location: string;
+    expected_participants: number;
+    event_type: string;
+    contact_person: string;
+    contact_number: string;
+    contact_email: string;
+    requirements: string;
+    proposal_file_path: string;
+    proposal_file_name: string;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED';
+    rejection_reason?: string;
+    admin_notes?: string;
+    approved_by?: number;
+    approved_at?: string;
+    reviewed_by?: number;
+    reviewed_at?: string;
+    is_successful?: boolean;
+    completed_at?: string;
+    created_at: string;
+    updated_at: string;
+    barangaySubmission?: {
+        id: number;
+        barangay_name: string;
+        municipality_name: string;
+        province_name: string;
+        region_name: string;
+        moa_file_path: string;
+        moa_file_name: string;
+        region?: {
+            id: number;
+            name: string;
+            code: string;
+        };
+        province?: {
+            id: number;
+            name: string;
+            code: string;
+        };
+        municipality?: {
+            id: number;
+            name: string;
+            code: string;
+        };
+        barangay?: {
+            id: number;
+            name: string;
+            psgc_code: string;
+            population?: number;
+        };
+    };
+    appliedBy?: {
+        id: number;
+        name: string;
+        email: string;
+    };
+    approvedBy?: {
+        id: number;
+        name: string;
+        email: string;
+    };
+    reviewedBy?: {
+        id: number;
+        name: string;
+        email: string;
+    };
+}
+
+interface Stats {
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+    under_review: number;
+    completed?: number;
+    cancelled?: number;
+    this_month: number;
+    this_week: number;
+}
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: {
+        id: number;
+        name: string;
+        slug: string;
+        description: string;
+    };
+    phone?: string;
+    bio?: string;
+    is_active: boolean;
+    last_login_at?: string;
+}
+
+interface CHPortalProps {
+    submissions: BarangayData[];
+    events: EventData[];
+    submissionStats: Stats;
+    eventStats: Stats;
+    user: User;
+}
+
+export default function CHPortal({ submissions, events, submissionStats, eventStats, user }: CHPortalProps) {
     // State for filter input
     const [filterText, setFilterText] = useState('');
+    
+    // Tab state for barangay submissions
+    const [activeTab, setActiveTab] = useState<'pending' | 'renewals' | 'approved' | 'masterlist'>('pending');
+    
+    // Tab state for events
+    const [activeEventTab, setActiveEventTab] = useState<'new' | 'approved' | 'all'>('new');
+    
+    // View mode state (barangays or events)
+    const [viewMode, setViewMode] = useState<'barangays' | 'events'>('barangays');
+
+    // Helper function to get user initials
+    const getUserInitials = (name: string): string => {
+        return name
+            .split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
+    // Helper function to get role display name
+    const getRoleDisplayName = (roleSlug: string): string => {
+        switch (roleSlug) {
+            case 'super-admin':
+                return 'Super Admin';
+            case 'community-admin':
+                return 'Community Admin';
+            case 'regular-user':
+                return 'Regular User';
+            default:
+                return 'User';
+        }
+    };
+
+    // Helper function to get tier display name
+    const getTierDisplayName = (tier: string): string => {
+        switch (tier) {
+            case 'BRONZE':
+                return 'Bronze Tier';
+            case 'SILVER':
+                return 'Silver Tier';
+            case 'GOLD':
+                return 'Gold Tier';
+            case 'PLATINUM':
+                return 'Platinum Tier';
+            default:
+                return 'Unknown Tier';
+        }
+    };
+
+    // Helper function to get tier badge color
+    const getTierBadgeColor = (tier: string): string => {
+        switch (tier) {
+            case 'BRONZE':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'SILVER':
+                return 'bg-gray-100 text-gray-800';
+            case 'GOLD':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'PLATINUM':
+                return 'bg-purple-100 text-purple-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -25,36 +254,72 @@ export default function CHPortal() {
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBarangay, setSelectedBarangay] = useState<BarangayData | null>(null);
+    const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
 
-    // Sample data - in a real app this would come from props or API
-    const barangayData: BarangayData[] = [
-        { id: '1', barangay: "Umali", city: "Lupao", province: "Nueva Ecija", region: "Central Luzon", applicant: "Juan Dela Cruz", status: "Pending" },
-        { id: '2', barangay: "San Jose", city: "Cabanatuan", province: "Nueva Ecija", region: "Central Luzon", applicant: "Maria Santos", status: "Approved" },
-        { id: '3', barangay: "Umali", city: "Lupao", province: "Nueva Ecija", region: "Central Luzon", applicant: "Juan Dela Cruz", status: "Pending" },
-        { id: '4', barangay: "San Jose", city: "Cabanatuan", province: "Nueva Ecija", region: "Central Luzon", applicant: "Maria Santos", status: "Approved" },
-        { id: '5', barangay: "Bagumbayan", city: "Science City of Muñoz", province: "Nueva Ecija", region: "Central Luzon", applicant: "Carlos Villanueva", status: "Pending" },
-        { id: '6', barangay: "San Antonio", city: "San Jose City", province: "Nueva Ecija", region: "Central Luzon", applicant: "Rosa Fernandez", status: "Approved" },
-        { id: '7', barangay: "Bantug", city: "Palayan City", province: "Nueva Ecija", region: "Central Luzon", applicant: "Miguel Torres", status: "Rejected" },
-        { id: '8', barangay: "Rizal", city: "Gapan", province: "Nueva Ecija", region: "Central Luzon", applicant: "Carmen Lopez", status: "Pending" },
-        { id: '9', barangay: "San Isidro", city: "Cabanatuan", province: "Nueva Ecija", region: "Central Luzon", applicant: "Roberto Cruz", status: "Approved" },
-        { id: '10', barangay: "Mabini", city: "Lupao", province: "Nueva Ecija", region: "Central Luzon", applicant: "Elena Ramos", status: "Pending" },
-        { id: '11', barangay: "Burgos", city: "Talavera", province: "Nueva Ecija", region: "Central Luzon", applicant: "Francisco Morales", status: "Rejected" }
-    ];
+    // Use data from props
+    const barangayData: BarangayData[] = submissions;
+    const eventData: EventData[] = events;
 
-    // Filtered data based on search input
+    // Filtered data based on tab and search input
     const filteredData = useMemo(() => {
-        if (!filterText) return barangayData;
-        
-        const searchTerm = filterText.toLowerCase();
-        return barangayData.filter(item => 
-            item.barangay.toLowerCase().includes(searchTerm) ||
-            item.city.toLowerCase().includes(searchTerm) ||
-            item.province.toLowerCase().includes(searchTerm) ||
-            item.region.toLowerCase().includes(searchTerm) ||
-            item.applicant.toLowerCase().includes(searchTerm) ||
-            item.status.toLowerCase().includes(searchTerm)
-        );
-    }, [filterText]);
+        if (viewMode === 'events') {
+            let data = eventData;
+            
+            // Filter events by tab
+            if (activeEventTab === 'new') {
+                data = data.filter(item => item.status === 'PENDING');
+            } else if (activeEventTab === 'approved') {
+                data = data.filter(item => item.status === 'APPROVED');
+            }
+            // 'all' shows all events (no filtering)
+            
+            // Filter by search text
+            if (filterText) {
+                const searchTerm = filterText.toLowerCase();
+                data = data.filter(item => 
+                    item.event_name.toLowerCase().includes(searchTerm) ||
+                    item.event_description.toLowerCase().includes(searchTerm) ||
+                    item.event_location.toLowerCase().includes(searchTerm) ||
+                    item.event_type.toLowerCase().includes(searchTerm) ||
+                    item.contact_person.toLowerCase().includes(searchTerm) ||
+                    item.status.toLowerCase().includes(searchTerm) ||
+                    item.barangaySubmission?.barangay_name.toLowerCase().includes(searchTerm) ||
+                    item.barangaySubmission?.municipality_name.toLowerCase().includes(searchTerm) ||
+                    item.barangaySubmission?.province_name.toLowerCase().includes(searchTerm) ||
+                    item.barangaySubmission?.region_name.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            return data;
+        } else {
+            let data = barangayData;
+            
+            // Filter by tab
+            if (activeTab === 'pending') {
+                data = data.filter(item => item.status === 'PENDING');
+            } else if (activeTab === 'renewals') {
+                data = data.filter(item => item.status === 'UNDER_REVIEW');
+            } else if (activeTab === 'approved') {
+                data = data.filter(item => item.status === 'APPROVED');
+            }
+            // 'masterlist' shows all data (no filtering)
+            
+            // Filter by search text
+            if (filterText) {
+                const searchTerm = filterText.toLowerCase();
+                data = data.filter(item => 
+                    item.barangay_name.toLowerCase().includes(searchTerm) ||
+                    item.municipality_name.toLowerCase().includes(searchTerm) ||
+                    item.province_name.toLowerCase().includes(searchTerm) ||
+                    item.region_name.toLowerCase().includes(searchTerm) ||
+                    item.second_party_name.toLowerCase().includes(searchTerm) ||
+                    item.status.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            return data;
+        }
+    }, [barangayData, eventData, activeTab, activeEventTab, filterText, viewMode]);
 
     // Pagination calculations
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -62,10 +327,10 @@ export default function CHPortal() {
     const endIndex = startIndex + itemsPerPage;
     const currentData = filteredData.slice(startIndex, endIndex);
 
-    // Reset to first page when filter changes
+    // Reset to first page when filter or tab changes
     useMemo(() => {
         setCurrentPage(1);
-    }, [filterText]);
+    }, [filterText, activeTab, activeEventTab, viewMode]);
 
     // Pagination handlers
     const goToPage = (page: number) => {
@@ -112,14 +377,24 @@ export default function CHPortal() {
     };
 
     // Handle view application click
-    const handleViewApplication = (barangay: BarangayData) => {
-        setSelectedBarangay(barangay);
+    const handleViewApplication = (item: BarangayData | EventData) => {
+        if (viewMode === 'events') {
+            setSelectedEvent(item as EventData);
+        } else {
+            setSelectedBarangay(item as BarangayData);
+        }
         setIsModalOpen(true);
     };
 
     const closeModal = () => {
         setIsModalOpen(false);
         setSelectedBarangay(null);
+        setSelectedEvent(null);
+    };
+
+    const handleSuccess = () => {
+        // Refresh the page to get updated data
+        window.location.reload();
     };
 
     return (
@@ -129,33 +404,52 @@ export default function CHPortal() {
             </Head>
             <Header />
             
-            {/* Main Content with Background Image */}
-            <div className="min-h-screen welcome-background relative">
+            {/* Main Content */}
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 relative overflow-hidden welcome-background">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 opacity-5">
+                    <div className="absolute inset-0" style={{
+                        backgroundImage: `radial-gradient(circle at 25% 25%, #fbbf24 0%, transparent 50%), 
+                                        radial-gradient(circle at 75% 75%, #f59e0b 0%, transparent 50%)`,
+                    }}></div>
+                </div>
+                
                 <div className="container mx-auto px-4 py-8 relative z-10">
                     
-                    {/* MY BARANGAY Header */}
-                    <div className="text-center mb-8">
-                        <h1 className="text-4xl font-bold text-white mb-2 font-tt-dugs">MY BARANGAY</h1>
+                    {/* Modern Header */}
+                    <div className="text-center mb-12 animate-fade-in">
+                        <div className="inline-block">
+                            <h1 className="text-6xl font-black text-white mb-4 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent animate-gradient">
+                                MY BARANGAY
+                            </h1>
+                            <div className="h-1 w-32 bg-gradient-to-r from-yellow-400 to-yellow-600 mx-auto rounded-full animate-pulse"></div>
+                        </div>
+                        <p className="text-gray-300 text-lg mt-6 max-w-2xl mx-auto leading-relaxed">
+                            Manage and monitor barangay applications and events
+                        </p>
                     </div>
 
-                    {/* User Profile Section */}
-                    <div className={`${styles.portalCard} rounded-lg p-6 mb-8`}>
-                        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+                    {/* Modern User Profile Section */}
+                    <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-500 animate-slide-up mb-8">
+                        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
                             {/* Left Side - User Info */}
-                            <div className="flex items-center space-x-4">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg">
-                                    <span className="text-2xl font-bold text-white">SM</span>
+                            <div className="flex items-center space-x-6">
+                                <div className="relative group">
+                                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                                        <span className="text-3xl font-bold text-white">{getUserInitials(user.name)}</span>
+                                    </div>
+                                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-gray-900"></div>
                                 </div>
                                 <div className="text-white">
-                                    <h2 className="text-xl font-bold">SEAN KENNETH MANLUPIG</h2>
-                                    <div className="flex flex-col lg:flex-row lg:space-x-8 mt-2 text-sm gap-2 lg:gap-0">
-                                        <div>
-                                            <span className="text-gray-400">Account Role</span>
-                                            <div className="text-white font-semibold">Super Admin</div>
+                                    <h2 className="text-2xl font-bold mb-2">{user.name.toUpperCase()}</h2>
+                                    <div className="flex flex-col lg:flex-row lg:space-x-8 gap-4">
+                                        <div className="space-y-1">
+                                            <span className="text-gray-400 text-sm uppercase tracking-wider">Account Role</span>
+                                            <div className="text-white font-semibold text-lg">{getRoleDisplayName(user.role.slug)}</div>
                                         </div>
-                                        <div>
-                                            <span className="text-gray-400">Area</span>
-                                            <div className="text-white font-semibold">Luzon</div>
+                                        <div className="space-y-1">
+                                            <span className="text-gray-400 text-sm uppercase tracking-wider">Email</span>
+                                            <div className="text-white font-semibold text-lg">{user.email}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -163,249 +457,605 @@ export default function CHPortal() {
                             
                             {/* Right Side - Account Status */}
                             <div className="text-right">
-                                <button className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-red-500/25">
-                                    Account
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Statistics Cards */}
-                    <div className={`grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8 ${styles.responsiveGrid5}`}>
-                        <div className={`${styles.statCard} rounded-lg p-4 text-center`}>
-                            <div className="text-gray-300 text-sm mb-2">Approved</div>
-                            <div className="text-white text-2xl font-bold">122</div>
-                        </div>
-                        <div className={`${styles.statCard} rounded-lg p-4 text-center`}>
-                            <div className="text-gray-300 text-sm mb-2">New</div>
-                            <div className="text-white text-2xl font-bold">100</div>
-                        </div>
-                        <div className={`${styles.statCard} rounded-lg p-4 text-center`}>
-                            <div className="text-gray-300 text-sm mb-2">Renewal</div>
-                            <div className="text-white text-2xl font-bold">122</div>
-                        </div>
-                        <div className={`${styles.statCard} rounded-lg p-4 text-center`}>
-                            <div className="text-gray-300 text-sm mb-2">Event Application</div>
-                            <div className="text-white text-2xl font-bold">122</div>
-                        </div>
-                        <div className={`${styles.statCard} rounded-lg p-4 text-center lg:col-span-1 md:col-span-3`}>
-                            <div className="text-gray-300 text-sm mb-2">Approved Event</div>
-                            <div className="text-white text-2xl font-bold">122</div>
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className={`flex flex-wrap gap-3 mb-6 ${styles.responsiveFlexWrap}`}>
-                        <button className={`${styles.actionButton} active bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 py-2 rounded-lg text-sm font-semibold`}>
-                            Pending Approval (122)
-                        </button>
-                        <button className={`${styles.actionButton} bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold`}>
-                            Renewals (122)
-                        </button>
-                        <button className={`${styles.actionButton} bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold`}>
-                            Approved Barangays (18)
-                        </button>
-                        <button className={`${styles.actionButton} bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold`}>
-                            Masterlist (589)
-                        </button>
-                        <button className={`${styles.actionButton} bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold`}>
-                            New Events (10)
-                        </button>
-                        <button className={`${styles.actionButton} bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold`}>
-                            Approved Events (589)
-                        </button>
-                        <button className={`${styles.actionButton} bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold`}>
-                            Event Reporting (589)
-                        </button>
-                        <button className={`${styles.actionButton} bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold`}>
-                            All Events (589)
-                        </button>
-                    </div>
-
-                    {/* Barangay Management Section */}
-                    <div className={`${styles.portalTable} ${styles.portalCard} rounded-lg p-6`}>
-                        {/* Header with Filter and Items Per Page */}
-                        <div className="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
-                            <div className="flex items-center gap-4">
-                                <h3 className="text-white text-lg font-semibold">
-                                    Barangays: {filteredData.length}
-                                    {filteredData.length !== barangayData.length && (
-                                        <span className="text-gray-400 text-sm ml-2">
-                                            (filtered from {barangayData.length})
-                                        </span>
-                                    )}
-                                </h3>
-                                <select
-                                    value={itemsPerPage}
-                                    onChange={(e) => {
-                                        setItemsPerPage(Number(e.target.value));
-                                        setCurrentPage(1);
-                                    }}
-                                    className="bg-gray-700/80 text-white px-3 py-1 rounded-lg text-sm border border-gray-600 focus:border-yellow-500 focus:outline-none"
-                                >
-                                    <option value={5}>5 per page</option>
-                                    <option value={10}>10 per page</option>
-                                    <option value={15}>15 per page</option>
-                                    <option value={20}>20 per page</option>
-                                </select>
-                            </div>
-                            <div className="flex items-center space-x-4">
-                                <input 
-                                    type="text" 
-                                    placeholder="Filter by barangay, city, applicant, status..."
-                                    value={filterText}
-                                    onChange={(e) => setFilterText(e.target.value)}
-                                    className="bg-gray-700/80 text-white px-3 py-2 rounded-lg text-sm border border-gray-600 focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-all duration-300 w-80"
-                                />
-                                {filterText && (
-                                    <button
-                                        onClick={() => setFilterText('')}
-                                        className="text-gray-400 hover:text-white transition-colors duration-200"
-                                        title="Clear filter"
-                                    >
+                                <Link href="/settings/profile" className="group relative inline-flex items-center justify-center px-8 py-3 text-sm font-bold text-white bg-gradient-to-r from-red-500 to-red-600 
+                                    rounded-md shadow-2xl hover:shadow-red-500/25 transition-all duration-300 
+                                    hover:from-red-400 hover:to-red-500 hover:scale-105 
+                                    focus:outline-none focus:ring-4 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-gray-900">
+                                    <span className="relative z-10 flex items-center space-x-2">
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
-                                    </button>
+                                        <span>Account Settings</span>
+                                    </span>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Modern Statistics Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+                        <div className="bg-white/5 backdrop-blur-xl rounded-md p-6 text-center shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
+                            <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">Approved</div>
+                            <div className="text-white text-3xl font-bold">{viewMode === 'events' ? eventStats.approved : submissionStats.approved}</div>
+                        </div>
+                        <div className="bg-white/5 backdrop-blur-xl rounded-md p-6 text-center shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                            </div>
+                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">New</div>
+                            <div className="text-white text-3xl font-bold">{viewMode === 'events' ? eventStats.pending : submissionStats.pending}</div>
+                        </div>
+                        <div className="bg-white/5 backdrop-blur-xl rounded-md p-6 text-center shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
+                            <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </div>
+                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">{viewMode === 'events' ? 'Completed' : 'Renewal'}</div>
+                            <div className="text-white text-3xl font-bold">{viewMode === 'events' ? eventStats.completed : submissionStats.under_review}</div>
+                        </div>
+                        <div className="bg-white/5 backdrop-blur-xl rounded-md p-6 text-center shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
+                            <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">{viewMode === 'events' ? 'This Month' : 'Event Application'}</div>
+                            <div className="text-white text-3xl font-bold">{viewMode === 'events' ? eventStats.this_month : submissionStats.this_month}</div>
+                        </div>
+                        <div className="bg-white/5 backdrop-blur-xl rounded-md p-6 text-center shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 group lg:col-span-1 md:col-span-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                </svg>
+                            </div>
+                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">Total</div>
+                            <div className="text-white text-3xl font-bold">{viewMode === 'events' ? eventStats.total : submissionStats.total}</div>
+                        </div>
+                    </div>
+
+                    {/* View Mode Toggle */}
+                    <div className="flex flex-wrap gap-4 mb-4">
+                        <button 
+                            onClick={() => setViewMode('barangays')}
+                            className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                viewMode === 'barangays'
+                                    ? 'text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-2xl hover:shadow-blue-500/25 hover:from-blue-400 hover:to-blue-500 focus:ring-blue-500/50'
+                                    : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                            }`}>
+                            <span className="relative z-10 flex items-center space-x-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                                <span>Barangay Submissions</span>
+                            </span>
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('events')}
+                            className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                viewMode === 'events'
+                                    ? 'text-white bg-gradient-to-r from-purple-500 to-purple-600 shadow-2xl hover:shadow-purple-500/25 hover:from-purple-400 hover:to-purple-500 focus:ring-purple-500/50'
+                                    : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                            }`}>
+                            <span className="relative z-10 flex items-center space-x-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>Events</span>
+                            </span>
+                        </button>
+                    </div>
+
+                    {/* Barangay Submission Tabs - Only show when in barangays view mode */}
+                    {viewMode === 'barangays' && (
+                        <div className="flex flex-wrap gap-4 mb-6">
+                            <button 
+                                onClick={() => setActiveTab('pending')}
+                                className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    activeTab === 'pending'
+                                        ? 'text-white bg-gradient-to-r from-orange-500 to-orange-600 shadow-2xl hover:shadow-orange-500/25 hover:from-orange-400 hover:to-orange-500 focus:ring-orange-500/50'
+                                        : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                                }`}>
+                                <span className="relative z-10 flex items-center space-x-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Pending Approval ({submissionStats.pending})</span>
+                                </span>
+                                {activeTab === 'pending' && (
+                                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                 )}
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('renewals')}
+                                className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    activeTab === 'renewals'
+                                        ? 'text-white bg-gradient-to-r from-purple-500 to-purple-600 shadow-2xl hover:shadow-purple-500/25 hover:from-purple-400 hover:to-purple-500 focus:ring-purple-500/50'
+                                        : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                                }`}>
+                                <span className="relative z-10 flex items-center space-x-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    <span>Renewals ({submissionStats.under_review})</span>
+                                </span>
+                                {activeTab === 'renewals' && (
+                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-purple-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                )}
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('approved')}
+                                className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    activeTab === 'approved'
+                                        ? 'text-white bg-gradient-to-r from-green-500 to-green-600 shadow-2xl hover:shadow-green-500/25 hover:from-green-400 hover:to-green-500 focus:ring-green-500/50'
+                                        : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                                }`}>
+                                <span className="relative z-10 flex items-center space-x-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Approved Barangays ({submissionStats.approved})</span>
+                                </span>
+                                {activeTab === 'approved' && (
+                                    <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                )}
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('masterlist')}
+                                className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    activeTab === 'masterlist'
+                                        ? 'text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-2xl hover:shadow-blue-500/25 hover:from-blue-400 hover:to-blue-500 focus:ring-blue-500/50'
+                                        : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                                }`}>
+                                <span className="relative z-10 flex items-center space-x-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                    <span>Masterlist ({submissionStats.total})</span>
+                                </span>
+                                {activeTab === 'masterlist' && (
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                )}
+                            </button>
+                        </div>
+                    )}
+                    {/* Event Tabs - Only show when in events view mode */}
+                    {viewMode === 'events' && (
+                        <div className="flex flex-wrap gap-4 mb-6">
+                            <button 
+                                onClick={() => setActiveEventTab('new')}
+                                className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    activeEventTab === 'new'
+                                        ? 'text-white bg-gradient-to-r from-orange-500 to-orange-600 shadow-2xl hover:shadow-orange-500/25 hover:from-orange-400 hover:to-orange-500 focus:ring-orange-500/50'
+                                        : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                                }`}>
+                                <span className="relative z-10 flex items-center space-x-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    <span>New Events ({eventStats.pending})</span>
+                                </span>
+                            </button>
+                            <button 
+                                onClick={() => setActiveEventTab('approved')}
+                                className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    activeEventTab === 'approved'
+                                        ? 'text-white bg-gradient-to-r from-green-500 to-green-600 shadow-2xl hover:shadow-green-500/25 hover:from-green-400 hover:to-green-500 focus:ring-green-500/50'
+                                        : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                                }`}>
+                                <span className="relative z-10 flex items-center space-x-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                    </svg>
+                                    <span>Approved Events ({eventStats.approved})</span>
+                                </span>
+                            </button>
+                            <button 
+                                onClick={() => setActiveEventTab('all')}
+                                className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    activeEventTab === 'all'
+                                        ? 'text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-2xl hover:shadow-blue-500/25 hover:from-blue-400 hover:to-blue-500 focus:ring-blue-500/50'
+                                        : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                                }`}>
+                                <span className="relative z-10 flex items-center space-x-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                    <span>All Events ({eventStats.total})</span>
+                                </span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Modern Barangay Management Section */}
+                    <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-500 animate-slide-up">
+                        {/* Modern Header with Filter and Items Per Page */}
+                        <div className="space-y-6 mb-8">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
+                                <h3 className="text-3xl font-bold text-white">
+                                    {viewMode === 'events' ? 'Event Management' : 'Barangay Management'}
+                                    {viewMode === 'events' && activeEventTab === 'new' && ' - New Events'}
+                                    {viewMode === 'events' && activeEventTab === 'approved' && ' - Approved Events'}
+                                    {viewMode === 'events' && activeEventTab === 'all' && ' - All Events'}
+                                    {viewMode === 'barangays' && activeTab === 'pending' && ' - Pending Approval'}
+                                    {viewMode === 'barangays' && activeTab === 'renewals' && ' - Renewals'}
+                                    {viewMode === 'barangays' && activeTab === 'approved' && ' - Approved Barangays'}
+                                    {viewMode === 'barangays' && activeTab === 'masterlist' && ' - Masterlist'}
+                                </h3>
+                            </div>
+                            
+                            <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
+                                <div className="flex items-center gap-6">
+                                    <div className="text-white">
+                                        <span className="text-lg font-semibold">Total: {filteredData.length}</span>
+                                        {filteredData.length !== barangayData.length && (
+                                            <span className="text-gray-400 text-sm ml-2">
+                                                (filtered from {barangayData.length})
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="relative">
+                                        <select
+                                            value={itemsPerPage}
+                                            onChange={(e) => {
+                                                setItemsPerPage(Number(e.target.value));
+                                                setCurrentPage(1);
+                                            }}
+                                            className="w-full px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white 
+                                                focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                transition-all duration-300 hover:bg-white/15 appearance-none cursor-pointer"
+                                            style={{
+                                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                color: 'white',
+                                                WebkitAppearance: 'none',
+                                                MozAppearance: 'none',
+                                                appearance: 'none'
+                                            }}
+                                        >
+                                            <option value={5} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>5 per page</option>
+                                            <option value={10} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>10 per page</option>
+                                            <option value={15} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>15 per page</option>
+                                            <option value={20} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>20 per page</option>
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className="relative">
+                                        <input 
+                                            type="text" 
+                                            placeholder={viewMode === 'events' ? "Search" : "Filter by barangay, city, applicant, status..."}
+                                            value={filterText}
+                                            onChange={(e) => setFilterText(e.target.value)}
+                                            className="w-full px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-300 
+                                                focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                transition-all duration-300 hover:bg-white/15 w-80"
+                                            style={{
+                                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                color: 'white',
+                                                WebkitAppearance: 'none',
+                                                MozAppearance: 'none',
+                                                appearance: 'none'
+                                            }}
+                                        />
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    {filterText && (
+                                        <button
+                                            onClick={() => setFilterText('')}
+                                            className="text-gray-400 hover:text-white transition-colors duration-200 p-2 hover:bg-white/10 rounded-lg"
+                                            title="Clear filter"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Pagination Info */}
+                        {/* Modern Pagination Info */}
                         {filteredData.length > 0 && (
-                            <div className="flex justify-between items-center mb-4 text-sm text-gray-400">
-                                <div>
-                                    Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} entries
+                            <div className="flex justify-between items-center mb-6 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+                                <div className="text-gray-300 text-sm">
+                                    Showing <span className="text-white font-semibold">{startIndex + 1}</span> to <span className="text-white font-semibold">{Math.min(endIndex, filteredData.length)}</span> of <span className="text-white font-semibold">{filteredData.length}</span> entries
                                 </div>
-                                <div>
-                                    Page {currentPage} of {totalPages}
+                                <div className="text-gray-300 text-sm">
+                                    Page <span className="text-white font-semibold">{currentPage}</span> of <span className="text-white font-semibold">{totalPages}</span>
                                 </div>
                             </div>
                         )}
 
-                        {/* No results message */}
+                        {/* Modern No results message */}
                         {filteredData.length === 0 && (
-                            <div className="text-center py-8">
-                                <div className="text-gray-400 text-lg mb-2">No barangays found</div>
-                                <div className="text-gray-500 text-sm">Try adjusting your search criteria</div>
+                            <div className="text-center py-12">
+                                <div className="w-16 h-16 bg-gray-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.709" />
+                                    </svg>
+                                </div>
+                                <div className="text-gray-300 text-lg mb-2">No {viewMode === 'events' ? 'events' : 'barangays'} found</div>
+                                <div className="text-gray-400 text-sm">Try adjusting your search criteria</div>
                             </div>
                         )}
 
                         {/* Table - Desktop View */}
                         {currentData.length > 0 && (
                             <div className="hidden lg:block">
-                                {/* Table Headers */}
-                                <div className={`${styles.tableGrid} mb-4 pb-2 border-b border-gray-600`}>
-                                    <div className="text-gray-400 text-sm font-semibold">Barangay</div>
-                                    <div className="text-gray-400 text-sm font-semibold">City/Municipality</div>
-                                    <div className="text-gray-400 text-sm font-semibold">Province</div>
-                                    <div className="text-gray-400 text-sm font-semibold">Region</div>
-                                    <div className="text-gray-400 text-sm font-semibold">Applicant</div>
-                                    <div className="text-gray-400 text-sm font-semibold">Status</div>
-                                    <div className="text-gray-400 text-sm font-semibold">Details</div>
-                                </div>
+                                {/* Modern Table Headers */}
+                                {viewMode === 'events' ? (
+                                    <div className="grid grid-cols-8 gap-4 mb-4 pb-4 border-b border-white/20">
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Event Name</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Location</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Date</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Barangay</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Contact Person</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Status</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Participants</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Details</div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-8 gap-4 mb-4 pb-4 border-b border-white/20">
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Barangay</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">City/Municipality</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Province</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Region</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Applicant</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Status</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Tier</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Details</div>
+                                    </div>
+                                )}
 
-                                {/* Table Rows */}
+                                {/* Modern Table Rows */}
                                 {currentData.map((item, index) => (
-                                    <div key={startIndex + index} className={`${styles.tableRow} ${styles.tableGrid} py-3 border-b border-gray-700/50 rounded-lg transition-all duration-300`}>
-                                        <div className="text-white text-sm">{item.barangay}</div>
-                                        <div className="text-white text-sm">{item.city}</div>
-                                        <div className="text-white text-sm">{item.province}</div>
-                                        <div className="text-white text-sm">{item.region}</div>
-                                        <div className="text-white text-sm">{item.applicant}</div>
-                                        <div className={`text-sm font-semibold ${
-                                            item.status === 'Approved' ? 'text-green-500' :
-                                            item.status === 'Pending' ? 'text-yellow-500' :
-                                            item.status === 'Rejected' ? 'text-red-500' : 'text-gray-500'
-                                        }`}>
-                                            {item.status}
-                                        </div>
-                                        <div>
-                                            <button 
-                                                onClick={() => handleViewApplication(item)}
-                                                className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
-                                            >
-                                                View Application
-                                            </button>
-                                        </div>
+                                    <div key={startIndex + index} className="grid grid-cols-8 gap-4 py-4 border-b border-white/10 hover:bg-white/5 rounded-xl transition-all duration-300 group">
+                                        {viewMode === 'events' ? (
+                                            <>
+                                                <div className="text-white text-sm font-medium">{(item as EventData).event_name}</div>
+                                                <div className="text-white text-sm">{(item as EventData).event_location}</div>
+                                                <div className="text-white text-sm">{new Date((item as EventData).event_date).toLocaleDateString()}</div>
+                                                <div className="text-white text-sm">{(item as EventData).barangaySubmission?.barangay_name || 'N/A'}</div>
+                                                <div className="text-white text-sm">{(item as EventData).contact_person}</div>
+                                                <div className={`text-sm font-semibold ${
+                                                    (item as EventData).status === 'APPROVED' ? 'text-green-400' :
+                                                    (item as EventData).status === 'PENDING' ? 'text-yellow-400' :
+                                                    (item as EventData).status === 'REJECTED' ? 'text-red-400' :
+                                                    (item as EventData).status === 'COMPLETED' ? 'text-blue-400' : 'text-gray-400'
+                                                }`}>
+                                                    {(item as EventData).status}
+                                                </div>
+                                                <div className="text-white text-sm">{(item as EventData).expected_participants}</div>
+                                                <div>
+                                                    <button 
+                                                        onClick={() => handleViewApplication(item as any)}
+                                                        className="group relative inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-white/10 backdrop-blur-sm border border-white/20 
+                                                            rounded-xl shadow-lg hover:shadow-white/10 transition-all duration-300 
+                                                            hover:bg-white/20 hover:scale-105 
+                                                            focus:outline-none focus:ring-4 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-gray-900"
+                                                    >
+                                                        <span className="relative z-10 flex items-center space-x-1">
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                            <span>View</span>
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="text-white text-sm font-medium">{(item as BarangayData).barangay_name}</div>
+                                                <div className="text-white text-sm">{(item as BarangayData).municipality_name}</div>
+                                                <div className="text-white text-sm">{(item as BarangayData).province_name}</div>
+                                                <div className="text-white text-sm">{(item as BarangayData).region_name}</div>
+                                                <div className="text-white text-sm">{(item as BarangayData).second_party_name}</div>
+                                                <div className={`text-sm font-semibold ${
+                                                    (item as BarangayData).status === 'APPROVED' ? 'text-green-400' :
+                                                    (item as BarangayData).status === 'PENDING' ? 'text-yellow-400' :
+                                                    (item as BarangayData).status === 'REJECTED' ? 'text-red-400' : 'text-blue-400'
+                                                }`}>
+                                                    {(item as BarangayData).status}
+                                                </div>
+                                                <div className="flex items-center">
+                                                    {(item as BarangayData).status === 'APPROVED' ? (
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTierBadgeColor((item as BarangayData).tier)}`}>
+                                                            {getTierDisplayName((item as BarangayData).tier)}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-500 text-sm">-</span>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <button 
+                                                        onClick={() => handleViewApplication(item as any)}
+                                                        className="group relative inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-white/10 backdrop-blur-sm border border-white/20 
+                                                            rounded-xl shadow-lg hover:shadow-white/10 transition-all duration-300 
+                                                            hover:bg-white/20 hover:scale-105 
+                                                            focus:outline-none focus:ring-4 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-gray-900"
+                                                    >
+                                                        <span className="relative z-10 flex items-center space-x-1">
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                            <span>View</span>
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         )}
 
-                        {/* Table - Mobile View */}
+                        {/* Modern Mobile View */}
                         {currentData.length > 0 && (
                             <div className="lg:hidden space-y-4">
                                 {currentData.map((item, index) => (
-                                    <div key={startIndex + index} className={`${styles.tableRow} bg-gray-800/50 rounded-lg p-4 transition-all duration-300`}>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div>
-                                                <div className="text-white font-semibold">{item.barangay}</div>
-                                                <div className="text-gray-400 text-sm">{item.city}, {item.province}</div>
-                                            </div>
-                                            <div className={`text-sm font-semibold ${
-                                                item.status === 'Approved' ? 'text-green-500' :
-                                                item.status === 'Pending' ? 'text-yellow-500' :
-                                                item.status === 'Rejected' ? 'text-red-500' : 'text-gray-500'
-                                            }`}>
-                                                {item.status}
-                                            </div>
-                                        </div>
-                                        <div className="text-gray-300 text-sm mb-2">
-                                            Applicant: {item.applicant}
-                                        </div>
-                                        <button 
-                                            onClick={() => handleViewApplication(item)}
-                                            className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
-                                        >
-                                            View Application
-                                        </button>
+                                    <div key={startIndex + index} className="bg-white/5 backdrop-blur-sm rounded-md p-6 border border-white/10 hover:bg-white/10 transition-all duration-300 group">
+                                        {viewMode === 'events' ? (
+                                            <>
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <div className="text-white font-bold text-lg">{(item as EventData).event_name}</div>
+                                                        <div className="text-gray-300 text-sm">{(item as EventData).event_location}</div>
+                                                        <div className="text-gray-400 text-xs mt-1">{new Date((item as EventData).event_date).toLocaleDateString()}</div>
+                                                    </div>
+                                                    <div className={`text-sm font-bold px-3 py-1 rounded-full ${
+                                                        (item as EventData).status === 'APPROVED' ? 'text-green-400 bg-green-400/20' :
+                                                        (item as EventData).status === 'PENDING' ? 'text-yellow-400 bg-yellow-400/20' :
+                                                        (item as EventData).status === 'REJECTED' ? 'text-red-400 bg-red-400/20' :
+                                                        (item as EventData).status === 'COMPLETED' ? 'text-blue-400 bg-blue-400/20' : 'text-gray-400 bg-gray-400/20'
+                                                    }`}>
+                                                        {(item as EventData).status}
+                                                    </div>
+                                                </div>
+                                                <div className="text-gray-300 text-sm mb-2">
+                                                    <span className="text-gray-400">Barangay:</span> {(item as EventData).barangaySubmission?.barangay_name || 'N/A'}
+                                                </div>
+                                                <div className="text-gray-300 text-sm mb-4">
+                                                    <span className="text-gray-400">Contact:</span> {(item as EventData).contact_person}
+                                                </div>
+                                                <div className="text-gray-300 text-sm mb-4">
+                                                    <span className="text-gray-400">Expected Participants:</span> {(item as EventData).expected_participants}
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleViewApplication(item as any)}
+                                                    className="group relative inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-white bg-white/10 backdrop-blur-sm border border-white/20 
+                                                        rounded-xl shadow-lg hover:shadow-white/10 transition-all duration-300 
+                                                        hover:bg-white/20 hover:scale-105 
+                                                        focus:outline-none focus:ring-4 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-gray-900"
+                                                >
+                                                    <span className="relative z-10 flex items-center space-x-2">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                        <span>View Event</span>
+                                                    </span>
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <div className="text-white font-bold text-lg">{(item as BarangayData).barangay_name}</div>
+                                                        <div className="text-gray-300 text-sm">{(item as BarangayData).municipality_name}, {(item as BarangayData).province_name}</div>
+                                                        <div className="text-gray-400 text-xs mt-1">{(item as BarangayData).region_name}</div>
+                                                    </div>
+                                                    <div className={`text-sm font-bold px-3 py-1 rounded-full ${
+                                                        (item as BarangayData).status === 'APPROVED' ? 'text-green-400 bg-green-400/20' :
+                                                        (item as BarangayData).status === 'PENDING' ? 'text-yellow-400 bg-yellow-400/20' :
+                                                        (item as BarangayData).status === 'REJECTED' ? 'text-red-400 bg-red-400/20' : 'text-blue-400 bg-blue-400/20'
+                                                    }`}>
+                                                        {(item as BarangayData).status}
+                                                    </div>
+                                                </div>
+                                                <div className="text-gray-300 text-sm mb-4">
+                                                    <span className="text-gray-400">Applicant:</span> {(item as BarangayData).second_party_name}
+                                                </div>
+                                                {(item as BarangayData).status === 'APPROVED' && (
+                                                    <div className="mb-4">
+                                                        <span className="text-gray-400 text-sm">Tier:</span>
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-2 ${getTierBadgeColor((item as BarangayData).tier)}`}>
+                                                            {getTierDisplayName((item as BarangayData).tier)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <button 
+                                                    onClick={() => handleViewApplication(item as any)}
+                                                    className="group relative inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-white bg-white/10 backdrop-blur-sm border border-white/20 
+                                                        rounded-xl shadow-lg hover:shadow-white/10 transition-all duration-300 
+                                                        hover:bg-white/20 hover:scale-105 
+                                                        focus:outline-none focus:ring-4 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-gray-900"
+                                                >
+                                                    <span className="relative z-10 flex items-center space-x-2">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                        <span>View Application</span>
+                                                    </span>
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         )}
 
-                        {/* Pagination Controls */}
+                        {/* Modern Pagination Controls */}
                         {totalPages > 1 && (
-                            <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
+                            <div className="flex flex-col sm:flex-row justify-between items-center mt-8 gap-6">
                                 {/* Previous/Next buttons */}
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-3">
                                     <button
                                         onClick={goToPreviousPage}
                                         disabled={currentPage === 1}
-                                        className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                                        className={`group relative inline-flex items-center justify-center px-4 py-2 text-sm font-bold transition-all duration-300 ${
                                             currentPage === 1
-                                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                                : 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white shadow-md hover:shadow-lg'
+                                                ? 'bg-white/5 text-gray-500 cursor-not-allowed'
+                                                : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg hover:shadow-white/10 hover:bg-white/20 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-gray-900'
                                         }`}
                                     >
-                                        Previous
+                                        <span className="relative z-10 flex items-center space-x-2">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                            <span>Previous</span>
+                                        </span>
                                     </button>
                                     <button
                                         onClick={goToNextPage}
                                         disabled={currentPage === totalPages}
-                                        className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                                        className={`group relative inline-flex items-center justify-center px-4 py-2 text-sm font-bold transition-all duration-300 ${
                                             currentPage === totalPages
-                                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                                : 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white shadow-md hover:shadow-lg'
+                                                ? 'bg-white/5 text-gray-500 cursor-not-allowed'
+                                                : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg hover:shadow-white/10 hover:bg-white/20 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-gray-900'
                                         }`}
                                     >
-                                        Next
+                                        <span className="relative z-10 flex items-center space-x-2">
+                                            <span>Next</span>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </span>
                                     </button>
                                 </div>
 
                                 {/* Page numbers */}
-                                <div className="flex items-center space-x-1">
+                                <div className="flex items-center space-x-2">
                                     {getPageNumbers().map((page, index) => (
                                         <button
                                             key={index}
                                             onClick={() => typeof page === 'number' && goToPage(page)}
                                             disabled={typeof page !== 'number'}
-                                            className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
                                                 page === currentPage
-                                                    ? 'bg-gradient-to-r from-yellow-600 to-yellow-700 text-white shadow-lg'
+                                                    ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-black shadow-2xl hover:shadow-yellow-500/25 hover:scale-105'
                                                     : typeof page === 'number'
-                                                    ? 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white shadow-md hover:shadow-lg'
+                                                    ? 'text-white bg-white/10 backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-white/10 hover:bg-white/20 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-gray-900'
                                                     : 'text-gray-500 cursor-default'
                                             }`}
                                         >
@@ -415,8 +1065,8 @@ export default function CHPortal() {
                                 </div>
 
                                 {/* Jump to page */}
-                                <div className="flex items-center space-x-2">
-                                    <span className="text-gray-400 text-sm">Go to:</span>
+                                <div className="flex items-center space-x-3">
+                                    <span className="text-gray-300 text-sm">Go to:</span>
                                     <input
                                         type="number"
                                         min="1"
@@ -428,7 +1078,16 @@ export default function CHPortal() {
                                                 goToPage(page);
                                             }
                                         }}
-                                        className="bg-gray-700/80 text-white px-2 py-1 rounded-lg text-sm border border-gray-600 focus:border-yellow-500 focus:outline-none w-16 text-center"
+                                        className="w-20 px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-300 
+                                            focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                            transition-all duration-300 hover:bg-white/15 text-center"
+                                        style={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                            color: 'white',
+                                            WebkitAppearance: 'none',
+                                            MozAppearance: 'none',
+                                            appearance: 'none'
+                                        }}
                                     />
                                 </div>
                             </div>
@@ -439,11 +1098,23 @@ export default function CHPortal() {
             </div>
 
             {/* View Info Modal */}
-            <ViewInfoModal 
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                barangayData={selectedBarangay}
-            />
+            {viewMode === 'barangays' && (
+                <ViewInfoModal 
+                    isOpen={isModalOpen}
+                    onClose={closeModal}
+                    barangayData={selectedBarangay}
+                />
+            )}
+            
+            {/* View Event Modal */}
+            {viewMode === 'events' && (
+                <ViewEventModal 
+                    isOpen={isModalOpen}
+                    onClose={closeModal}
+                    eventData={selectedEvent}
+                    onSuccess={handleSuccess}
+                />
+            )}
         </>
     );
 }

@@ -200,4 +200,116 @@
     font-family: 'Orbitron', ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Modern Animations for Register Barangay Page */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes gradient {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.8s ease-out;
+}
+
+.animate-slide-up {
+    animation: slide-up 1s ease-out;
+}
+
+.animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 3s ease infinite;
+}
+
+/* Custom scrollbar for dropdowns */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(251, 191, 36, 0.5);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(251, 191, 36, 0.7);
+}
+
+/* Safari-specific input field fixes */
+input[type="text"],
+input[type="date"],
+select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+select:focus {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    color: white !important;
+}
+
+input[type="text"]:hover,
+input[type="date"]:hover,
+select:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    color: white !important;
+}
+
+/* Safari placeholder text fix */
+input[type="text"]::placeholder,
+input[type="date"]::placeholder {
+    color: rgb(209, 213, 219) !important; /* gray-300 */
+    opacity: 1;
+}
+
+/* Safari date input specific fixes */
+input[type="date"] {
+    color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.7;
+}
+
+/* Safari select dropdown fixes */
+select option {
+    background-color: rgb(17, 24, 39) !important; /* gray-900 */
+    color: white !important;
+}
+
 

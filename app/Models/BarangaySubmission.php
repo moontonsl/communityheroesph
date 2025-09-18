@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class BarangaySubmission extends Model
@@ -26,6 +27,9 @@ class BarangaySubmission extends Model
         'moa_file_path',
         'moa_file_name',
         'status',
+        'tier',
+        'successful_events_count',
+        'tier_updated_at',
         'rejection_reason',
         'admin_notes',
         'approved_by',
@@ -41,7 +45,9 @@ class BarangaySubmission extends Model
         'date_signed' => 'date',
         'approved_at' => 'datetime',
         'reviewed_at' => 'datetime',
-        'population' => 'integer'
+        'tier_updated_at' => 'datetime',
+        'population' => 'integer',
+        'successful_events_count' => 'integer'
     ];
 
     protected static function boot()
@@ -86,6 +92,11 @@ class BarangaySubmission extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
+
     // Status methods
     public function isPending(): bool
     {
@@ -112,6 +123,9 @@ class BarangaySubmission extends Model
     {
         $this->update([
             'status' => 'APPROVED',
+            'tier' => 'BRONZE', // Default tier for new approvals
+            'successful_events_count' => 0,
+            'tier_updated_at' => now(),
             'approved_by' => $user->id,
             'approved_at' => now(),
             'admin_notes' => $notes
@@ -158,5 +172,109 @@ class BarangaySubmission extends Model
     public function scopeUnderReview($query)
     {
         return $query->where('status', 'UNDER_REVIEW');
+    }
+
+    // Tier methods
+    public function isBronze(): bool
+    {
+        return $this->tier === 'BRONZE';
+    }
+
+    public function isSilver(): bool
+    {
+        return $this->tier === 'SILVER';
+    }
+
+    public function isGold(): bool
+    {
+        return $this->tier === 'GOLD';
+    }
+
+    public function isPlatinum(): bool
+    {
+        return $this->tier === 'PLATINUM';
+    }
+
+    public function getTierDisplayName(): string
+    {
+        return match($this->tier) {
+            'BRONZE' => 'Bronze Tier',
+            'SILVER' => 'Silver Tier',
+            'GOLD' => 'Gold Tier',
+            'PLATINUM' => 'Platinum Tier',
+            default => 'Unknown Tier'
+        };
+    }
+
+    public function getTierColor(): string
+    {
+        return match($this->tier) {
+            'BRONZE' => 'text-yellow-600',
+            'SILVER' => 'text-gray-400',
+            'GOLD' => 'text-yellow-400',
+            'PLATINUM' => 'text-purple-400',
+            default => 'text-gray-500'
+        };
+    }
+
+    public function getTierBadgeColor(): string
+    {
+        return match($this->tier) {
+            'BRONZE' => 'bg-yellow-100 text-yellow-800',
+            'SILVER' => 'bg-gray-100 text-gray-800',
+            'GOLD' => 'bg-yellow-100 text-yellow-800',
+            'PLATINUM' => 'bg-purple-100 text-purple-800',
+            default => 'bg-gray-100 text-gray-800'
+        };
+    }
+
+    // Tier upgrade logic
+    public function incrementSuccessfulEvents(): void
+    {
+        $this->increment('successful_events_count');
+        $this->checkAndUpgradeTier();
+    }
+
+    public function checkAndUpgradeTier(): void
+    {
+        $newTier = $this->calculateTierFromEvents($this->successful_events_count);
+        
+        if ($newTier !== $this->tier) {
+            $this->update([
+                'tier' => $newTier,
+                'tier_updated_at' => now()
+            ]);
+        }
+    }
+
+    public function calculateTierFromEvents(int $eventCount): string
+    {
+        return match(true) {
+            $eventCount >= 6 => 'PLATINUM',
+            $eventCount >= 4 => 'GOLD',
+            $eventCount >= 2 => 'SILVER',
+            default => 'BRONZE'
+        };
+    }
+
+    // Scopes for tiers
+    public function scopeBronze($query)
+    {
+        return $query->where('tier', 'BRONZE');
+    }
+
+    public function scopeSilver($query)
+    {
+        return $query->where('tier', 'SILVER');
+    }
+
+    public function scopeGold($query)
+    {
+        return $query->where('tier', 'GOLD');
+    }
+
+    public function scopePlatinum($query)
+    {
+        return $query->where('tier', 'PLATINUM');
     }
 }

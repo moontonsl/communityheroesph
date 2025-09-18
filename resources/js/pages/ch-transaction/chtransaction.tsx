@@ -27,7 +27,7 @@ export default function CHTransaction() {
                                     {/* Register Barangay Button */}
                                     <Link
                                         href="/registerbarangay"
-                                        className="w-full p-3 bg-dark-container text-white rounded-2xl border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black focus:outline-none focus:border-yellow-300 text-center font-semibold transition-all duration-200 cursor-pointer block"
+                                        className="w-full p-3 bg-dark-container text-white rounded-md border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black focus:outline-none focus:border-yellow-300 text-center font-semibold transition-all duration-200 cursor-pointer block"
                                     >
                                         Register Barangay
                                     </Link>
@@ -35,7 +35,7 @@ export default function CHTransaction() {
                                     {/* Apply Event Button */}
                                     <Link
                                         href="/apply-event"
-                                        className="w-full p-3 bg-dark-container text-white rounded-2xl border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black focus:outline-none focus:border-yellow-300 text-center font-semibold transition-all duration-200 cursor-pointer block"
+                                        className="w-full p-3 bg-dark-container text-white rounded-md border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black focus:outline-none focus:border-yellow-300 text-center font-semibold transition-all duration-200 cursor-pointer block"
                                     >
                                         Apply Event
                                     </Link>
@@ -43,7 +43,7 @@ export default function CHTransaction() {
                                     {/* My Barangays Button */}
                                     <Link
                                         href="/MyBarangay"
-                                        className="w-full p-3 bg-dark-container text-white rounded-2xl border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black focus:outline-none focus:border-yellow-300 text-center font-semibold transition-all duration-200 cursor-pointer block"
+                                        className="w-full p-3 bg-dark-container text-white rounded-md border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black focus:outline-none focus:border-yellow-300 text-center font-semibold transition-all duration-200 cursor-pointer block"
                                     >
                                         My Barangays
                                     </Link>

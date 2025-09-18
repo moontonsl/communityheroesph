@@ -1,19 +1,37 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function ApplyEvent() {
+interface BarangaySubmission {
+    id: number;
+    barangay_name: string;
+    municipality_name: string;
+    province_name: string;
+    region_name: string;
+    tier: string;
+    successful_events_count: number;
+}
+
+interface ApplyEventProps {
+    approvedBarangays: BarangaySubmission[];
+}
+
+export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
     const [formData, setFormData] = useState({
+        barangaySubmissionId: '',
         eventName: '',
         eventDescription: '',
         eventDate: '',
         eventLocation: '',
         expectedParticipants: '',
+        eventType: '',
         contactPerson: '',
         contactNumber: '',
         contactEmail: '',
-        eventType: 'tournament',
-        requirements: ''
+        requirements: '',
+        proposalFile: null as File | null
     });
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({
@@ -22,11 +40,110 @@ export default function ApplyEvent() {
         }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        setFormData(prev => ({
+            ...prev,
+            proposalFile: file
+        }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle form submission logic here
-        console.log('Event application submitted:', formData);
-        alert('Event application submitted successfully!');
+        setIsSubmitting(true);
+
+        try {
+            console.log('Starting form submission...', formData);
+            
+            // First upload the proposal file if it exists
+            let proposalFilePath = '';
+            let proposalFileName = '';
+            
+            if (formData.proposalFile) {
+                console.log('Uploading proposal file:', formData.proposalFile.name);
+                const formDataFile = new FormData();
+                formDataFile.append('proposal_file', formData.proposalFile);
+                
+                const uploadResponse = await fetch('/api/upload-proposal', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: formDataFile
+                });
+                
+                console.log('Upload response status:', uploadResponse.status);
+                const uploadResult = await uploadResponse.json();
+                console.log('Upload result:', uploadResult);
+                
+                if (!uploadResult.success) {
+                    throw new Error(uploadResult.message || 'Failed to upload proposal file');
+                }
+                
+                proposalFilePath = uploadResult.file_path;
+                proposalFileName = uploadResult.file_name;
+                console.log('File uploaded successfully:', proposalFilePath);
+            } else {
+                throw new Error('Please upload a proposal PDF file');
+            }
+
+            const eventData = {
+                barangay_submission_id: formData.barangaySubmissionId,
+                event_name: formData.eventName,
+                event_description: formData.eventDescription,
+                event_date: formData.eventDate,
+                event_location: formData.eventLocation,
+                expected_participants: parseInt(formData.expectedParticipants),
+                event_type: formData.eventType,
+                contact_person: formData.contactPerson,
+                contact_number: formData.contactNumber,
+                contact_email: formData.contactEmail,
+                requirements: formData.requirements,
+                proposal_file_path: proposalFilePath,
+                proposal_file_name: proposalFileName
+            };
+            
+            console.log('Submitting event data:', eventData);
+            
+            const response = await fetch('/api/apply-event', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify(eventData)
+            });
+
+            console.log('Event submission response status:', response.status);
+            const result = await response.json();
+            console.log('Event submission result:', result);
+
+            if (result.success) {
+                alert('Event application submitted successfully!');
+                // Reset form
+                setFormData({
+                    barangaySubmissionId: '',
+                    eventName: '',
+                    eventDescription: '',
+                    eventDate: '',
+                    eventLocation: '',
+                    expectedParticipants: '',
+                    eventType: '',
+                    contactPerson: '',
+                    contactNumber: '',
+                    contactEmail: '',
+                    requirements: '',
+                    proposalFile: null
+                });
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Event submission error:', error);
+            alert('Error submitting event application: ' + (error instanceof Error ? error.message : 'Please try again.'));
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -81,6 +198,39 @@ export default function ApplyEvent() {
                     {/* Form Container */}
                     <div className="bg-gray-200/0 backdrop-blur-sm rounded-4xl p-6 shadow-2xl border-4 border-gray-500">
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* BARANGAY SELECTION Section */}
+                            <div>
+                                <h2 className="text-2xl font-bold text-white mb-4 text-left">SELECT BARANGAY</h2>
+                                <div className="ml-6">
+                                    <div>
+                                        <label className="block text-white font-semibold mb-2">Barangay Location</label>
+                                        <select
+                                            value={formData.barangaySubmissionId}
+                                            onChange={(e) => handleInputChange('barangaySubmissionId', e.target.value)}
+                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white focus:outline-none focus:border-yellow-300"
+                                            required
+                                        >
+                                            <option value="">Select a barangay...</option>
+                                            {approvedBarangays.map((barangay) => (
+                                                <option key={barangay.id} value={barangay.id}>
+                                                    {barangay.barangay_name}, {barangay.municipality_name}, {barangay.province_name} ({barangay.tier})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {approvedBarangays.length === 0 && (
+                                            <p className="text-red-400 text-sm mt-2">
+                                                No approved barangays available. Please ensure your barangay registration is approved first.
+                                            </p>
+                                        )}
+                                        {approvedBarangays.length > 0 && (
+                                            <p className="text-yellow-300 text-sm mt-2">
+                                                You can only apply for events in your approved barangays.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* EVENT DETAILS Section */}
                             <div>
                                 <h2 className="text-2xl font-bold text-white mb-4 text-left">EVENT DETAILS</h2>
@@ -122,14 +272,22 @@ export default function ApplyEvent() {
                                     </div>
                                     <div>
                                         <label className="block text-white font-semibold mb-2">Event Location</label>
-                                        <input
-                                            type="text"
+                                        <select
                                             value={formData.eventLocation}
                                             onChange={(e) => handleInputChange('eventLocation', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-300"
-                                            placeholder="Enter event location"
+                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white focus:outline-none focus:border-yellow-300"
                                             required
-                                        />
+                                        >
+                                            <option value="">Select event location...</option>
+                                            {approvedBarangays.map((barangay) => (
+                                                <option key={barangay.id} value={`${barangay.barangay_name}, ${barangay.municipality_name}, ${barangay.province_name}`}>
+                                                    {barangay.barangay_name}, {barangay.municipality_name}, {barangay.province_name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="text-yellow-300 text-sm mt-2">
+                                            Select from your approved barangays only.
+                                        </p>
                                     </div>
                                     <div>
                                         <label className="block text-white font-semibold mb-2">Expected Participants</label>
@@ -213,6 +371,31 @@ export default function ApplyEvent() {
                                 </div>
                             </div>
 
+                            {/* PROPOSAL FILE UPLOAD Section */}
+                            <div>
+                                <h2 className="text-2xl font-bold text-white mb-4 text-left">PROPOSAL DOCUMENT</h2>
+                                <div className="ml-6">
+                                    <div>
+                                        <label className="block text-white font-semibold mb-2">Upload Proposal PDF</label>
+                                        <input
+                                            type="file"
+                                            accept=".pdf"
+                                            onChange={handleFileChange}
+                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-black hover:file:bg-yellow-400 focus:outline-none focus:border-yellow-300"
+                                            required
+                                        />
+                                        <p className="text-yellow-300 text-sm mt-2">
+                                            Please upload a PDF file containing your event proposal (max 10MB).
+                                        </p>
+                                        {formData.proposalFile && (
+                                            <p className="text-green-400 text-sm mt-1">
+                                                Selected: {formData.proposalFile.name}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Action Buttons */}
                             <div className="flex justify-center space-x-4 pt-4">
                                 <Link
@@ -223,9 +406,10 @@ export default function ApplyEvent() {
                                 </Link>
                                 <button
                                     type="submit"
-                                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-xl border-2 border-yellow-400 text-lg transition-colors duration-200"
+                                    disabled={isSubmitting}
+                                    className="bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-xl border-2 border-yellow-400 text-lg transition-colors duration-200"
                                 >
-                                    SUBMIT APPLICATION
+                                    {isSubmitting ? 'SUBMITTING...' : 'SUBMIT APPLICATION'}
                                 </button>
                             </div>
                         </form>

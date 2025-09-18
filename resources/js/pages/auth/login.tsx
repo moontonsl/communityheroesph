@@ -86,7 +86,7 @@ export default function Login() {
                                     placeholder="Email Address"
                                     value={data.email}
                                     onChange={(e) => setData('email', e.target.value)}
-                                    className={`w-full p-3 bg-dark-container text-white rounded-2xl border-2 focus:outline-none text-center ${
+                                    className={`w-full p-3 bg-dark-container text-white rounded-md border-2 focus:outline-none text-center ${
                                         errors.email 
                                             ? 'border-red-500 focus:border-red-400' 
                                             : 'border-yellow-400 focus:border-yellow-300'
@@ -106,7 +106,7 @@ export default function Login() {
                                     placeholder="Password"
                                     value={data.password}
                                     onChange={(e) => setData('password', e.target.value)}
-                                    className={`w-full p-3 bg-dark-container text-white rounded-2xl border-2 focus:outline-none text-center pr-12 ${
+                                    className={`w-full p-3 bg-dark-container text-white rounded-md border-2 focus:outline-none text-center pr-12 ${
                                         errors.password 
                                             ? 'border-red-500 focus:border-red-400' 
                                             : 'border-yellow-400 focus:border-yellow-300'
@@ -171,7 +171,7 @@ export default function Login() {
                         <img 
                             src="/images/homepage/image.png" 
                             alt="Heroes Image" 
-                            className="absolute inset-0 w-full h-110 object-cover rounded-2xl transform scale-100"
+                            className="absolute inset-0 w-full h-110 object-cover rounded-md transform scale-100"
                         />
                     </div>
                 </div>

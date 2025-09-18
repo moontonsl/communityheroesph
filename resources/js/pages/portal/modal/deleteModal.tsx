@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
 interface DeleteModalProps {
     isOpen: boolean;
     onClose: () => void;
     barangayName?: string;
+    submissionId?: number;
+    onSuccess?: () => void;
 }
 
-export default function DeleteModal({ isOpen, onClose, barangayName = "Umali" }: DeleteModalProps) {
+export default function DeleteModal({ isOpen, onClose, barangayName = "Umali", submissionId, onSuccess }: DeleteModalProps) {
     const [showSuccess, setShowSuccess] = useState(false);
+    const [deleteReason, setDeleteReason] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
     if (!isOpen) return null;
 
@@ -17,8 +23,27 @@ export default function DeleteModal({ isOpen, onClose, barangayName = "Umali" }:
         }
     };
 
-    const handleDelete = () => {
-        setShowSuccess(true);
+    const handleDelete = async () => {
+        if (!submissionId || !deleteReason.trim()) return;
+        
+        setIsLoading(true);
+        setError('');
+        
+        try {
+            await axios.delete(`/api/admin/submissions/${submissionId}`, {
+                data: {
+                    admin_notes: deleteReason.trim(),
+                    _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            });
+            
+            setShowSuccess(true);
+            if (onSuccess) onSuccess();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to delete application');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleBackToServices = () => {
@@ -43,13 +68,34 @@ export default function DeleteModal({ isOpen, onClose, barangayName = "Umali" }:
                     <div className="bg-gray-800 rounded-lg shadow-2xl max-w-md w-full p-6">
                         <div className="text-center">
                             <h2 className="text-white text-xl font-bold mb-4">DELETE APPLICATION</h2>
-                            <p className="text-gray-300 text-sm mb-6 leading-relaxed">
+                            <p className="text-gray-300 text-sm mb-4 leading-relaxed">
                                 ARE YOU SURE YOU WANT TO DELETE THIS ENTRY?
                             </p>
-                            <p className="text-gray-300 text-sm mb-6 leading-relaxed">
+                            <p className="text-gray-300 text-sm mb-4 leading-relaxed">
                                 Once deleted, all the information in the database regarding 
                                 this entry will be lost and cannot be recovered.
                             </p>
+                            
+                            <p className="text-gray-300 text-sm mb-4 leading-relaxed">
+                                Please provide a reason for deletion:
+                            </p>
+                            
+                            {/* Reason Input */}
+                            <div className="mb-6">
+                                <textarea
+                                    value={deleteReason}
+                                    onChange={(e) => setDeleteReason(e.target.value)}
+                                    placeholder="Enter reason for deletion..."
+                                    className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg text-sm border border-gray-600 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all duration-300 resize-none"
+                                    rows={3}
+                                />
+                            </div>
+                            
+                            {error && (
+                                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-4">
+                                    <p className="text-red-400 text-sm">{error}</p>
+                                </div>
+                            )}
                             
                             <div className="flex flex-col sm:flex-row gap-3 justify-center">
                                 <button 
@@ -60,9 +106,14 @@ export default function DeleteModal({ isOpen, onClose, barangayName = "Umali" }:
                                 </button>
                                 <button 
                                     onClick={handleDelete}
-                                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-red-500/25 order-1 sm:order-2"
+                                    disabled={!deleteReason.trim() || isLoading}
+                                    className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg order-1 sm:order-2 ${
+                                        deleteReason.trim() && !isLoading
+                                            ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white hover:shadow-red-500/25' 
+                                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                    }`}
                                 >
-                                    DELETE
+                                    {isLoading ? 'DELETING...' : 'DELETE'}
                                 </button>
                             </div>
                         </div>

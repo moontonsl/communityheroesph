@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -106,5 +107,15 @@ class User extends Authenticatable
         return $query->whereHas('role', function ($q) use ($roleSlug) {
             $q->where('slug', $roleSlug);
         });
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class, 'applied_by');
+    }
+
+    public function approvedBarangays(): HasMany
+    {
+        return $this->hasMany(BarangaySubmission::class, 'approved_by');
     }
 }
