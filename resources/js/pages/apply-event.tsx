@@ -68,12 +68,22 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                 const uploadResponse = await fetch('/api/upload-proposal', {
                     method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'Accept': 'application/json'
                     },
                     body: formDataFile
                 });
                 
                 console.log('Upload response status:', uploadResponse.status);
+                
+                // Check if response is JSON
+                const uploadContentType = uploadResponse.headers.get('content-type');
+                if (!uploadContentType || !uploadContentType.includes('application/json')) {
+                    const uploadText = await uploadResponse.text();
+                    console.error('Non-JSON upload response:', uploadText);
+                    throw new Error('File upload failed. Please check if you are logged in.');
+                }
+                
                 const uploadResult = await uploadResponse.json();
                 console.log('Upload result:', uploadResult);
                 
@@ -110,12 +120,22 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify(eventData)
             });
 
             console.log('Event submission response status:', response.status);
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Non-JSON response:', text);
+                throw new Error('Server returned non-JSON response. Please check if you are logged in.');
+            }
+            
             const result = await response.json();
             console.log('Event submission result:', result);
 
@@ -137,7 +157,13 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                     proposalFile: null
                 });
             } else {
-                alert('Error: ' + result.message);
+                // Handle validation errors
+                if (result.errors) {
+                    const errorMessages = Object.values(result.errors).flat();
+                    alert('Validation Error:\n' + errorMessages.join('\n'));
+                } else {
+                    alert('Error: ' + result.message);
+                }
             }
         } catch (error) {
             console.error('Event submission error:', error);
@@ -317,6 +343,7 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                                                 type="date"
                                                 value={formData.eventDate}
                                                 onChange={(e) => handleInputChange('eventDate', e.target.value)}
+                                                min={new Date().toISOString().split('T')[0]}
                                                 className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white 
                                                     focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
                                                     transition-all duration-300 hover:bg-white/15"

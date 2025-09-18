@@ -315,6 +315,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'requirements' => 'nullable|string|max:1000',
                 'proposal_file_path' => 'required|string',
                 'proposal_file_name' => 'required|string'
+            ], [
+                'event_date.after_or_equal' => 'The event date must be today or a future date.',
+                'barangay_submission_id.exists' => 'Please select a valid barangay.',
+                'expected_participants.min' => 'Expected participants must be at least 1.',
+                'expected_participants.max' => 'Expected participants cannot exceed 10,000.',
+                'contact_email.email' => 'Please enter a valid email address.',
+                'proposal_file_path.required' => 'Please upload a proposal file.'
             ]);
             
             // Create event application
