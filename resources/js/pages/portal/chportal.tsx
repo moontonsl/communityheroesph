@@ -721,10 +721,9 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                                 appearance: 'none'
                                             }}
                                         >
-                                            <option value={5} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>5 per page</option>
-                                            <option value={10} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>10 per page</option>
-                                            <option value={15} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>15 per page</option>
-                                            <option value={20} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>20 per page</option>
+                                            <option value={5} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>10 per page</option>
+                                            <option value={10} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>15 per page</option>
+                                            <option value={15} style={{ backgroundColor: 'rgb(17, 24, 39)', color: 'white' }}>20 per page</option>
                                         </select>
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                             <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -737,7 +736,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <div className="relative">
                                         <input 
                                             type="text" 
-                                            placeholder={viewMode === 'events' ? "Search" : "Filter by barangay, city, applicant, status..."}
+                                            placeholder={viewMode === 'events' ? "Search" : "Search"}
                                             value={filterText}
                                             onChange={(e) => setFilterText(e.target.value)}
                                             className="w-full px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-300 

@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Header from '@/pages/partials/header';
 
 interface BarangaySubmission {
     id: number;
@@ -119,39 +120,7 @@ export default function MyBarangays() {
                 {/* Global Poppins font is already set in CSS */}
             </Head>
             
-            {/* Black Header with Navigation */}
-            <header className="bg-black text-white shadow-lg sticky top-0 z-50">
-                <div className="max-w-1xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-17">
-                        {/* Left Side - Logo and Brand */}
-                        <div className="flex items-center space-x-4">
-                            {/* Logo Container */}
-                            <div className="relative">
-                                {/* Logo Image */}
-                                <img 
-                                    src="/images/homepage/communityheroes-logo.png" 
-                                    alt="Community Heroes Logo" 
-                                    className="w-15 h-15 object-contain"
-                                />
-                            </div>
-                            
-                            {/* Brand Text */}
-                            <div className="text-3xl font-black tracking-wider">
-                                COMMUNITY HEROES PH
-                            </div>
-                        </div>
-                        
-                        {/* Right Side - MLBB Logo */}
-                        <div className="flex items-center">
-                            <img 
-                                src="/images/homepage/mlbb-logo.png" 
-                                alt="Mobile Legends Bang Bang Logo" 
-                                className="w-30 h-30 object-contain"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Header />
 
             {/* Main Content with Background Image */}
             <div className="min-h-screen welcome-background relative">

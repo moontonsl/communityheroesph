@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
+import Header from '@/pages/partials/header';
 
 interface BarangaySubmission {
     id: number;
@@ -152,264 +153,509 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                 {/* Global Poppins font is already set in CSS */}
             </Head>
             
-            {/* Black Header with Navigation */}
-            <header className="bg-black text-white shadow-lg sticky top-0 z-50">
-                <div className="max-w-1xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-17">
-                        {/* Left Side - Logo and Brand */}
-                        <div className="flex items-center space-x-4">
-                            {/* Logo Container */}
-                            <div className="relative">
-                                {/* Logo Image */}
-                                <img 
-                                    src="/images/homepage/communityheroes-logo.png" 
-                                    alt="Community Heroes Logo" 
-                                    className="w-15 h-15 object-contain"
-                                />
-                            </div>
-                            
-                            {/* Brand Text */}
-                            <div className="text-3xl font-black tracking-wider">
-                                COMMUNITY HEROES PH
-                            </div>
-                        </div>
-                        
-                        {/* Right Side - MLBB Logo */}
-                        <div className="flex items-center">
-                            <img 
-                                src="/images/homepage/mlbb-logo.png" 
-                                alt="Mobile Legends Bang Bang Logo" 
-                                className="w-30 h-30 object-contain"
-                            />
-                        </div>
-                    </div>
+            <Header />
+
+            {/* Main Content */}
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex items-center justify-center py-12 px-4 relative overflow-hidden welcome-background">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 opacity-5">
+                    <div className="absolute inset-0" style={{
+                        backgroundImage: `radial-gradient(circle at 25% 25%, #fbbf24 0%, transparent 50%), 
+                                        radial-gradient(circle at 75% 75%, #f59e0b 0%, transparent 50%)`,
+                    }}></div>
                 </div>
-            </header>
-
-            {/* Main Content with Background Image */}
-            <div className="min-h-screen welcome-background flex items-center justify-center py-0">
-                <div className="w-500 max-w-8xl mx-auto px-4">
-                    {/* Form Title */}
-                    <div className="text-center mb-6">
-                        <h1 className="text-5xl font-bold text-white mb-2">APPLY FOR EVENT</h1>
-                        <p className="text-yellow-400 text-lg">Submit your event application for Community Heroes PH</p>
+                
+                <div className="w-full max-w-6xl mx-auto relative z-10">
+                    {/* Modern Form Title */}
+                    <div className="text-center mb-12 animate-fade-in">
+                        <div className="inline-block">
+                            <h1 className="text-6xl font-black text-white mb-4 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent animate-gradient">
+                                APPLY FOR EVENT
+                            </h1>
+                            <div className="h-1 w-32 bg-gradient-to-r from-yellow-400 to-yellow-600 mx-auto rounded-full animate-pulse"></div>
+                        </div>
+                        <p className="text-gray-300 text-lg mt-6 max-w-2xl mx-auto leading-relaxed">
+                            Submit your event application for Community Heroes PH and bring gaming excitement to your barangay
+                        </p>
                     </div>
 
-                    {/* Form Container */}
-                    <div className="bg-gray-200/0 backdrop-blur-sm rounded-4xl p-6 shadow-2xl border-4 border-gray-500">
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Modern Form Container */}
+                    <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-500 animate-slide-up">
+                        <form onSubmit={handleSubmit} className="space-y-12">
                             {/* BARANGAY SELECTION Section */}
-                            <div>
-                                <h2 className="text-2xl font-bold text-white mb-4 text-left">SELECT BARANGAY</h2>
-                                <div className="ml-6">
-                                    <div>
-                                        <label className="block text-white font-semibold mb-2">Barangay Location</label>
+                            <div className="space-y-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
+                                    <h2 className="text-3xl font-bold text-white">Barangay Selection</h2>
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                        Barangay Location
+                                    </label>
+                                    <div className="relative">
                                         <select
                                             value={formData.barangaySubmissionId}
                                             onChange={(e) => handleInputChange('barangaySubmissionId', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white focus:outline-none focus:border-yellow-300"
+                                            className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white 
+                                                focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                transition-all duration-300 hover:bg-white/15"
                                             required
+                                            style={{
+                                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                color: 'white',
+                                                WebkitAppearance: 'none',
+                                                MozAppearance: 'none',
+                                                appearance: 'none'
+                                            }}
                                         >
                                             <option value="">Select a barangay...</option>
                                             {approvedBarangays.map((barangay) => (
-                                                <option key={barangay.id} value={barangay.id}>
+                                                <option key={barangay.id} value={barangay.id} style={{ backgroundColor: '#1f2937', color: 'white' }}>
                                                     {barangay.barangay_name}, {barangay.municipality_name}, {barangay.province_name} ({barangay.tier})
                                                 </option>
                                             ))}
                                         </select>
-                                        {approvedBarangays.length === 0 && (
-                                            <p className="text-red-400 text-sm mt-2">
-                                                No approved barangays available. Please ensure your barangay registration is approved first.
-                                            </p>
-                                        )}
-                                        {approvedBarangays.length > 0 && (
-                                            <p className="text-yellow-300 text-sm mt-2">
-                                                You can only apply for events in your approved barangays.
-                                            </p>
-                                        )}
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
                                     </div>
+                                    {approvedBarangays.length === 0 && (
+                                        <p className="text-red-400 text-sm flex items-center">
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            No approved barangays available. Please ensure your barangay registration is approved first.
+                                        </p>
+                                    )}
+                                    {approvedBarangays.length > 0 && (
+                                        <p className="text-yellow-400/80 text-sm flex items-center">
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            You can only apply for events in your approved barangays.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
                             {/* EVENT DETAILS Section */}
-                            <div>
-                                <h2 className="text-2xl font-bold text-white mb-4 text-left">EVENT DETAILS</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
-                                    <div>
-                                        <label className="block text-white font-semibold mb-2">Event Name</label>
-                                        <input
-                                            type="text"
-                                            value={formData.eventName}
-                                            onChange={(e) => handleInputChange('eventName', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-300"
-                                            placeholder="Enter event name"
-                                            required
-                                        />
+                            <div className="space-y-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
+                                    <h2 className="text-3xl font-bold text-white">Event Details</h2>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Event Name
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={formData.eventName}
+                                                onChange={(e) => handleInputChange('eventName', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15"
+                                                placeholder="Enter event name"
+                                                required
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            />
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-white font-semibold mb-2">Event Type</label>
-                                        <select
-                                            value={formData.eventType}
-                                            onChange={(e) => handleInputChange('eventType', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white focus:outline-none focus:border-yellow-300"
-                                        >
-                                            <option value="tournament">Tournament</option>
-                                            <option value="workshop">Workshop</option>
-                                            <option value="seminar">Seminar</option>
-                                            <option value="community">Community Event</option>
-                                            <option value="other">Other</option>
-                                        </select>
+                                    <div className="space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Event Type
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                value={formData.eventType}
+                                                onChange={(e) => handleInputChange('eventType', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15"
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            >
+                                                <option value="tournament" style={{ backgroundColor: '#1f2937', color: 'white' }}>Tournament</option>
+                                                <option value="workshop" style={{ backgroundColor: '#1f2937', color: 'white' }}>Workshop</option>
+                                                <option value="seminar" style={{ backgroundColor: '#1f2937', color: 'white' }}>Seminar</option>
+                                                <option value="community" style={{ backgroundColor: '#1f2937', color: 'white' }}>Community Event</option>
+                                                <option value="other" style={{ backgroundColor: '#1f2937', color: 'white' }}>Other</option>
+                                            </select>
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-white font-semibold mb-2">Event Date</label>
-                                        <input
-                                            type="date"
-                                            value={formData.eventDate}
-                                            onChange={(e) => handleInputChange('eventDate', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-300"
-                                            required
-                                        />
+                                    <div className="space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Event Date
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="date"
+                                                value={formData.eventDate}
+                                                onChange={(e) => handleInputChange('eventDate', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15"
+                                                required
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            />
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-white font-semibold mb-2">Event Location</label>
-                                        <select
-                                            value={formData.eventLocation}
-                                            onChange={(e) => handleInputChange('eventLocation', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white focus:outline-none focus:border-yellow-300"
-                                            required
-                                        >
-                                            <option value="">Select event location...</option>
-                                            {approvedBarangays.map((barangay) => (
-                                                <option key={barangay.id} value={`${barangay.barangay_name}, ${barangay.municipality_name}, ${barangay.province_name}`}>
-                                                    {barangay.barangay_name}, {barangay.municipality_name}, {barangay.province_name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <p className="text-yellow-300 text-sm mt-2">
-                                            Select from your approved barangays only.
+                                    <div className="space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Event Location
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                value={formData.eventLocation}
+                                                onChange={(e) => handleInputChange('eventLocation', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15"
+                                                required
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            >
+                                                <option value="">Select event location...</option>
+                                                {approvedBarangays.map((barangay) => (
+                                                    <option key={barangay.id} value={`${barangay.barangay_name}, ${barangay.municipality_name}, ${barangay.province_name}`} style={{ backgroundColor: '#1f2937', color: 'white' }}>
+                                                        {barangay.barangay_name}, {barangay.municipality_name}, {barangay.province_name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <p className="text-yellow-400/80 text-xs flex items-center">
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Select from your approved barangays only
                                         </p>
                                     </div>
-                                    <div>
-                                        <label className="block text-white font-semibold mb-2">Expected Participants</label>
-                                        <input
-                                            type="number"
-                                            value={formData.expectedParticipants}
-                                            onChange={(e) => handleInputChange('expectedParticipants', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-300"
-                                            placeholder="Number of participants"
-                                            min="1"
-                                        />
+                                    <div className="space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Expected Participants
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                value={formData.expectedParticipants}
+                                                onChange={(e) => handleInputChange('expectedParticipants', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15"
+                                                placeholder="Number of participants"
+                                                min="1"
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            />
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* CONTACT INFORMATION Section */}
-                            <div>
-                                <h2 className="text-2xl font-bold text-white mb-4 text-left">CONTACT INFORMATION</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
-                                    <div>
-                                        <label className="block text-white font-semibold mb-2">Contact Person</label>
-                                        <input
-                                            type="text"
-                                            value={formData.contactPerson}
-                                            onChange={(e) => handleInputChange('contactPerson', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-300"
-                                            placeholder="Full name"
-                                            required
-                                        />
+                            <div className="space-y-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
+                                    <h2 className="text-3xl font-bold text-white">Contact Information</h2>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Contact Person
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={formData.contactPerson}
+                                                onChange={(e) => handleInputChange('contactPerson', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15"
+                                                placeholder="Full name"
+                                                required
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            />
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-white font-semibold mb-2">Contact Number</label>
-                                        <input
-                                            type="tel"
-                                            value={formData.contactNumber}
-                                            onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-300"
-                                            placeholder="+63 917 123 4567"
-                                            required
-                                        />
+                                    <div className="space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Contact Number
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="tel"
+                                                value={formData.contactNumber}
+                                                onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15"
+                                                placeholder="+63 917 123 4567"
+                                                required
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            />
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-white font-semibold mb-2">Email Address</label>
-                                        <input
-                                            type="email"
-                                            value={formData.contactEmail}
-                                            onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-300"
-                                            placeholder="contact@example.com"
-                                            required
-                                        />
+                                    <div className="lg:col-span-2 space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Email Address
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="email"
+                                                value={formData.contactEmail}
+                                                onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15"
+                                                placeholder="contact@example.com"
+                                                required
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            />
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* EVENT DESCRIPTION Section */}
-                            <div>
-                                <h2 className="text-2xl font-bold text-white mb-4 text-left">EVENT DESCRIPTION</h2>
-                                <div className="ml-6">
-                                    <div>
-                                        <label className="block text-white font-semibold mb-2">Event Description</label>
-                                        <textarea
-                                            value={formData.eventDescription}
-                                            onChange={(e) => handleInputChange('eventDescription', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-300"
-                                            placeholder="Describe your event in detail..."
-                                            rows={4}
-                                            required
-                                        />
+                            <div className="space-y-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
+                                    <h2 className="text-3xl font-bold text-white">Event Description</h2>
+                                </div>
+                                <div className="space-y-6">
+                                    <div className="space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Event Description
+                                        </label>
+                                        <div className="relative">
+                                            <textarea
+                                                value={formData.eventDescription}
+                                                onChange={(e) => handleInputChange('eventDescription', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15 resize-none"
+                                                placeholder="Describe your event in detail..."
+                                                rows={4}
+                                                required
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            />
+                                        </div>
+                                        <p className="text-yellow-400/80 text-xs flex items-center">
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Provide a detailed description of your event
+                                        </p>
                                     </div>
-                                    <div className="mt-4">
-                                        <label className="block text-white font-semibold mb-2">Special Requirements</label>
-                                        <textarea
-                                            value={formData.requirements}
-                                            onChange={(e) => handleInputChange('requirements', e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-300"
-                                            placeholder="Any special requirements or notes..."
-                                            rows={3}
-                                        />
+                                    <div className="space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Special Requirements
+                                        </label>
+                                        <div className="relative">
+                                            <textarea
+                                                value={formData.requirements}
+                                                onChange={(e) => handleInputChange('requirements', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15 resize-none"
+                                                placeholder="Any special requirements or notes..."
+                                                rows={3}
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            />
+                                        </div>
+                                        <p className="text-yellow-400/80 text-xs flex items-center">
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Optional: List any special requirements or additional notes
+                                        </p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* PROPOSAL FILE UPLOAD Section */}
-                            <div>
-                                <h2 className="text-2xl font-bold text-white mb-4 text-left">PROPOSAL DOCUMENT</h2>
-                                <div className="ml-6">
-                                    <div>
-                                        <label className="block text-white font-semibold mb-2">Upload Proposal PDF</label>
+                            <div className="space-y-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
+                                    <h2 className="text-3xl font-bold text-white">Proposal Document</h2>
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                        Upload Proposal PDF
+                                    </label>
+                                    <div className="relative">
                                         <input
                                             type="file"
                                             accept=".pdf"
                                             onChange={handleFileChange}
-                                            className="w-full px-3 py-2 bg-gray-700 border-2 border-yellow-400 rounded-4xl text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-black hover:file:bg-yellow-400 focus:outline-none focus:border-yellow-300"
+                                            className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white 
+                                                file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold 
+                                                file:bg-yellow-500 file:text-black hover:file:bg-yellow-400 
+                                                focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                transition-all duration-300 hover:bg-white/15"
                                             required
+                                            style={{
+                                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                color: 'white',
+                                                WebkitAppearance: 'none',
+                                                MozAppearance: 'none',
+                                                appearance: 'none'
+                                            }}
                                         />
-                                        <p className="text-yellow-300 text-sm mt-2">
-                                            Please upload a PDF file containing your event proposal (max 10MB).
-                                        </p>
-                                        {formData.proposalFile && (
-                                            <p className="text-green-400 text-sm mt-1">
-                                                Selected: {formData.proposalFile.name}
-                                            </p>
-                                        )}
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                            </svg>
+                                        </div>
                                     </div>
+                                    <p className="text-yellow-400/80 text-xs flex items-center">
+                                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Please upload a PDF file containing your event proposal (max 10MB)
+                                    </p>
+                                    {formData.proposalFile && (
+                                        <p className="text-green-400 text-sm flex items-center">
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Selected: {formData.proposalFile.name}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex justify-center space-x-4 pt-4">
+                            <div className="flex justify-center space-x-6 pt-8">
                                 <Link
                                     href="/Transaction"
-                                    className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-xl border-2 border-gray-400 text-lg transition-colors duration-200"
+                                    className="px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white font-bold text-lg 
+                                        hover:bg-white/20 hover:border-white/30 transition-all duration-300 
+                                        focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
                                 >
                                     CANCEL
                                 </Link>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-xl border-2 border-yellow-400 text-lg transition-colors duration-200"
+                                    className="px-8 py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 
+                                        disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed 
+                                        text-white font-bold text-lg rounded-xl border border-yellow-400/50 
+                                        transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 
+                                        shadow-lg hover:shadow-xl disabled:shadow-none"
                                 >
-                                    {isSubmitting ? 'SUBMITTING...' : 'SUBMIT APPLICATION'}
+                                    {isSubmitting ? (
+                                        <span className="flex items-center">
+                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            SUBMITTING...
+                                        </span>
+                                    ) : (
+                                        'SUBMIT APPLICATION'
+                                    )}
                                 </button>
                             </div>
                         </form>

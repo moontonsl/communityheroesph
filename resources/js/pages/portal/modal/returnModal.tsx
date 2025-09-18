@@ -40,7 +40,7 @@ export default function ReturnModal({ isOpen, onClose, barangayName = "Umali", s
                 admin_notes: `${type === 'event' ? 'Event' : 'Application'} rejected by admin`,
                 _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             });
-            
+                
             setShowSuccess(true);
             if (onSuccess) onSuccess();
         } catch (err: any) {

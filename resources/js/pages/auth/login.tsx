@@ -1,5 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Shield } from 'lucide-react';
+import Header from '@/pages/partials/header';
 
 export default function Login() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -23,39 +25,7 @@ export default function Login() {
                 {/* Global Poppins font is already set in CSS */}
             </Head>
             
-            {/* Black Header with Navigation */}
-            <header className="bg-black text-white shadow-lg sticky top-0 z-50">
-                <div className="max-w-1xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-17">
-                        {/* Left Side - Logo and Brand */}
-                        <div className="flex items-center space-x-4">
-                            {/* Logo Container */}
-                            <div className="relative">
-                                {/* Logo Image */}
-                                <img 
-                                    src="/images/homepage/communityheroes-logo.png" 
-                                    alt="Community Heroes Logo" 
-                                    className="w-15 h-15 object-contain"
-                                />
-                            </div>
-                            
-                            {/* Brand Text */}
-                            <div className="text-3xl font-black tracking-wider">
-                                COMMUNITY HEROES PH
-                            </div>
-                        </div>
-                        
-                        {/* Right Side - MLBB Logo */}
-                        <div className="flex items-center">
-                            <img 
-                                src="/images/homepage/mlbb-logo.png" 
-                                alt="Mobile Legends Bang Bang Logo" 
-                                className="w-30 h-30 object-contain"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Header />
 
             {/* Main Content with Background Image */}
             <div className="min-h-screen welcome-background relative">
@@ -73,96 +43,127 @@ export default function Login() {
                 
                 {/* Main Content Container - Centered */}
                 <div className="flex flex-col lg:flex-row gap-2 relative z-10 items-center justify-center" style={{ marginTop: 'calc(20vh - 150px)' }}>
-                    {/* Left Side - Login Form Square */}
-                    <div className="lg:w-130 lg:h-85 rounded-[50px] p-6 border-6 border-gray-500 bg-dark-container flex flex-col items-center justify-center">
-                        <h2 className="text-2xl font-bold text-white mb-6 text-center">
-                            LOG IN CREDENTIALS
-                        </h2>
-                        <form onSubmit={submit} className="space-y-4 w-90">
+                    {/* Left Side - Modern Login Form */}
+                    <div className="lg:w-130 lg:h-85 rounded-3xl p-6 bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl flex flex-col items-center justify-center">
+                        {/* Header */}
+
+                        <form onSubmit={submit} className="space-y-4 w-full max-w-sm">
                             {/* Email Field */}
-                            <div>
-                                <input
-                                    type="email"
-                                    placeholder="Email Address"
-                                    value={data.email}
-                                    onChange={(e) => setData('email', e.target.value)}
-                                    className={`w-full p-3 bg-dark-container text-white rounded-md border-2 focus:outline-none text-center ${
-                                        errors.email 
-                                            ? 'border-red-500 focus:border-red-400' 
-                                            : 'border-yellow-400 focus:border-yellow-300'
-                                    }`}
-                                    required
-                                    autoComplete="email"
-                                />
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-300">Email Address</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Mail className="w-4 h-4 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="email"
+                                        placeholder="Enter your email"
+                                        value={data.email}
+                                        onChange={(e) => setData('email', e.target.value)}
+                                        className={`w-full pl-10 pr-4 py-2.5 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent transition-all duration-300 ${
+                                            errors.email 
+                                                ? 'border-red-500/50 focus:ring-red-400/50' 
+                                                : 'border-white/20 hover:border-white/30'
+                                        }`}
+                                        required
+                                        autoComplete="email"
+                                    />
+                                </div>
                                 {errors.email && (
-                                    <p className="text-red-400 text-xs mt-1 text-center">{errors.email}</p>
+                                    <p className="text-red-400 text-xs flex items-center">
+                                        <span className="w-1 h-1 bg-red-400 rounded-full mr-2"></span>
+                                        {errors.email}
+                                    </p>
                                 )}
                             </div>
 
                             {/* Password Field */}
-                            <div className="relative">
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="Password"
-                                    value={data.password}
-                                    onChange={(e) => setData('password', e.target.value)}
-                                    className={`w-full p-3 bg-dark-container text-white rounded-md border-2 focus:outline-none text-center pr-12 ${
-                                        errors.password 
-                                            ? 'border-red-500 focus:border-red-400' 
-                                            : 'border-yellow-400 focus:border-yellow-300'
-                                    }`}
-                                    required
-                                    autoComplete="current-password"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                                >
-                                    {showPassword ? (
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                                        </svg>
-                                    ) : (
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                    )}
-                                </button>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-300">Password</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Lock className="w-4 h-4 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        placeholder="Enter your password"
+                                        value={data.password}
+                                        onChange={(e) => setData('password', e.target.value)}
+                                        className={`w-full pl-10 pr-10 py-2.5 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-transparent transition-all duration-300 ${
+                                            errors.password 
+                                                ? 'border-red-500/50 focus:ring-red-400/50' 
+                                                : 'border-white/20 hover:border-white/30'
+                                        }`}
+                                        required
+                                        autoComplete="current-password"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors duration-200"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
                                 {errors.password && (
-                                    <p className="text-red-400 text-xs mt-1 text-center">{errors.password}</p>
+                                    <p className="text-red-400 text-xs flex items-center">
+                                        <span className="w-1 h-1 bg-red-400 rounded-full mr-2"></span>
+                                        {errors.password}
+                                    </p>
                                 )}
                             </div>
 
-                            {/* Remember Me Checkbox */}
-                            <div className="flex items-center justify-center space-x-2">
-                                <input
-                                    type="checkbox"
-                                    id="remember"
-                                    checked={data.remember}
-                                    onChange={(e) => setData('remember', e.target.checked)}
-                                    className="w-4 h-4 text-yellow-400 bg-gray-700 border-gray-600 rounded focus:ring-yellow-400 focus:ring-2"
-                                />
-                                <label htmlFor="remember" className="text-sm text-gray-300">
-                                    Remember me
+                            {/* Remember Me */}
+                            <div className="flex items-center justify-end">
+                                <label className="flex items-center space-x-2 cursor-pointer group">
+                                    <div className="relative">
+                                        <input
+                                            type="checkbox"
+                                            id="remember"
+                                            checked={data.remember}
+                                            onChange={(e) => setData('remember', e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-4 h-4 rounded border-2 transition-all duration-200 ${
+                                            data.remember 
+                                                ? 'bg-yellow-400 border-yellow-400' 
+                                                : 'border-gray-400 group-hover:border-gray-300'
+                                        }`}>
+                                            {data.remember && (
+                                                <svg className="w-2.5 h-2.5 text-black mt-0.5 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-sm text-gray-300 group-hover:text-white transition-colors duration-200">
+                                        Remember me
+                                    </span>
                                 </label>
                             </div>
 
                             {/* Login Button */}
-                            <div className="flex justify-center">
-                                <button 
-                                    type="submit"
-                                    disabled={processing}
-                                    className={`w-30 p-3 font-bold rounded-xl border-2 transition-colors ${
-                                        processing
-                                            ? 'bg-gray-500 text-gray-300 border-gray-500 cursor-not-allowed'
-                                            : 'bg-yellow-400 text-black border-yellow-400 hover:bg-yellow-300'
-                                    }`}
-                                >
-                                    {processing ? 'LOGGING IN...' : 'LOG IN'}
-                                </button>
-                            </div>
+                            <button 
+                                type="submit"
+                                disabled={processing}
+                                className={`w-full py-2.5 px-6 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
+                                    processing
+                                        ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:from-yellow-300 hover:to-orange-400 shadow-lg hover:shadow-yellow-400/25 transform hover:scale-[1.02]'
+                                }`}
+                            >
+                                {processing ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+                                        <span>Signing in...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Sign In</span>
+                                        <ArrowRight className="w-4 h-4" />
+                                    </>
+                                )}
+                            </button>
                         </form>
                     </div>
                     

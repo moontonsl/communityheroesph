@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Header from '@/pages/partials/header';
 
 interface LocationOption {
     id: number;
@@ -531,34 +532,7 @@ export default function RegisterBarangay() {
             </Head>
             
             {/* Modern Header */}
-            <header className="bg-gradient-to-r from-gray-900 via-black to-gray-900 text-white shadow-2xl sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-20">
-                        {/* Left Side - Logo and Brand */}
-                        <div className="flex items-center space-x-6">
-                            <div className="relative group">
-                                <img 
-                                    src="/images/homepage/communityheroes-logo.png" 
-                                    alt="Community Heroes Logo" 
-                                    className="w-16 h-16 object-contain transition-transform duration-300 group-hover:scale-110"
-                                />
-                            </div>
-                            <div className="text-2xl font-black tracking-wider bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
-                                COMMUNITY HEROES PH
-                            </div>
-                        </div>
-                        
-                        {/* Right Side - MLBB Logo */}
-                        <div className="flex items-center group">
-                            <img 
-                                src="/images/homepage/mlbb-logo.png" 
-                                alt="Mobile Legends Bang Bang Logo" 
-                                className="w-24 h-24 object-contain transition-transform duration-300 group-hover:scale-105"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Header />
 
             {/* Main Content */}
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex items-center justify-center py-12 px-4 relative overflow-hidden welcome-background">
