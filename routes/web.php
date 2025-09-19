@@ -29,6 +29,21 @@ Route::middleware(['auth', 'verified', 'redirect.admin'])->group(function () {
         Route::post('/submissions/{id}/approve', [App\Http\Controllers\Admin\SubmissionController::class, 'approve'])->name('submissions.approve');
         Route::post('/submissions/{id}/reject', [App\Http\Controllers\Admin\SubmissionController::class, 'reject'])->name('submissions.reject');
         Route::post('/submissions/{id}/review', [App\Http\Controllers\Admin\SubmissionController::class, 'markUnderReview'])->name('submissions.review');
+        
+        // Account Management routes
+        Route::get('/account-management', [App\Http\Controllers\Admin\AccountManagementController::class, 'index'])->name('account-management');
+        Route::post('/account-management', [App\Http\Controllers\Admin\AccountManagementController::class, 'store'])->name('account-management.store');
+        Route::put('/account-management/{user}', [App\Http\Controllers\Admin\AccountManagementController::class, 'update'])->name('account-management.update');
+        Route::put('/account-management/{user}/password', [App\Http\Controllers\Admin\AccountManagementController::class, 'updatePassword'])->name('account-management.password');
+        Route::patch('/account-management/{user}/toggle-status', [App\Http\Controllers\Admin\AccountManagementController::class, 'toggleStatus'])->name('account-management.toggle-status');
+        Route::delete('/account-management/{user}', [App\Http\Controllers\Admin\AccountManagementController::class, 'destroy'])->name('account-management.destroy');
+        
+        // Role Management routes
+        Route::get('/roles', [App\Http\Controllers\Admin\RoleManagementController::class, 'index'])->name('roles');
+        Route::post('/roles', [App\Http\Controllers\Admin\RoleManagementController::class, 'store'])->name('roles.store');
+        Route::put('/roles/{role}', [App\Http\Controllers\Admin\RoleManagementController::class, 'update'])->name('roles.update');
+        Route::patch('/roles/{role}/toggle-status', [App\Http\Controllers\Admin\RoleManagementController::class, 'toggleStatus'])->name('roles.toggle-status');
+        Route::delete('/roles/{role}', [App\Http\Controllers\Admin\RoleManagementController::class, 'destroy'])->name('roles.destroy');
     });
 });
 Route::middleware(['auth', 'verified'])->group(function () {
