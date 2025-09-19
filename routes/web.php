@@ -4,13 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/', function () {
-        return Inertia::render('homepage');
-    })->name('home');
+    Route::get('/', [App\Http\Controllers\HomepageController::class, 'index'])->name('home');
 
-    Route::get('/homepage', function () {
-        return Inertia::render('homepage');
-    })->name('homepage');
+    Route::get('/homepage', [App\Http\Controllers\HomepageController::class, 'index'])->name('homepage');
 
     Route::get('/registerbarangay', function () {
         return Inertia::render('registerbarangay');

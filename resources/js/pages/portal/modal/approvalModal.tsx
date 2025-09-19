@@ -66,7 +66,6 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
                 onClick={handleOverlayClick}
             >
                 {!showSuccess ? (
-                    /* Confirmation Modal */
                     <div className="bg-gray-800 rounded-lg shadow-2xl max-w-md w-full p-6">
                         <div className="text-center">
                             <h2 className="text-white text-xl font-bold mb-4">APPROVAL</h2>
@@ -105,7 +104,6 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
                         </div>
                     </div>
                 ) : (
-                    /* Success Modal */
                     <div className="bg-gray-800 rounded-lg shadow-2xl max-w-md w-full p-6">
                         <div className="text-center">
                             {/* Success Icon */}

@@ -110,7 +110,6 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
 
     if (!eventData) return null;
 
-    // Debug: Log the event data structure
     console.log('Event Data:', eventData);
     console.log('Barangay Submission (camelCase):', eventData.barangaySubmission);
     console.log('Barangay Submission (snake_case):', (eventData as any).barangay_submission);

@@ -34,13 +34,11 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
-            // Foreign keys
             $table->foreign('barangay_submission_id')->references('id')->on('barangay_submissions')->onDelete('cascade');
             $table->foreign('applied_by')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
             $table->foreign('reviewed_by')->references('id')->on('users')->onDelete('set null');
 
-            // Indexes
             $table->index(['status', 'event_date']);
             $table->index(['barangay_submission_id', 'status']);
         });

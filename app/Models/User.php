@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -10,7 +9,6 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
@@ -54,13 +52,11 @@ class User extends Authenticatable
         ];
     }
 
-    // Relationships
     public function role()
     {
         return $this->belongsTo(Role::class);
     }
 
-    // Role and permission methods
     public function hasRole(string $roleSlug): bool
     {
         return $this->role && $this->role->slug === $roleSlug;
@@ -96,7 +92,6 @@ class User extends Authenticatable
         return $this->role && $this->role->hasAllPermissions($permissions);
     }
 
-    // Scopes
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

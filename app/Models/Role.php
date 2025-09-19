@@ -20,13 +20,11 @@ class Role extends Model
         'is_active' => 'boolean'
     ];
 
-    // Relationships
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
     }
 
-    // Permission methods
     public function hasPermission(string $permission): bool
     {
         if (!$this->permissions) {
@@ -54,13 +52,11 @@ class Role extends Model
         return empty(array_diff($permissions, $this->permissions));
     }
 
-    // Scopes
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    // Static methods for common roles
     public static function superAdmin(): self
     {
         return static::where('slug', 'super-admin')->first();

@@ -64,7 +64,6 @@ export default function DeleteModal({ isOpen, onClose, barangayName = "Umali", s
                 onClick={handleOverlayClick}
             >
                 {!showSuccess ? (
-                    /* Confirmation Modal */
                     <div className="bg-gray-800 rounded-lg shadow-2xl max-w-md w-full p-6">
                         <div className="text-center">
                             <h2 className="text-white text-xl font-bold mb-4">DELETE APPLICATION</h2>
@@ -119,7 +118,6 @@ export default function DeleteModal({ isOpen, onClose, barangayName = "Umali", s
                         </div>
                     </div>
                 ) : (
-                    /* Success Modal */
                     <div className="bg-gray-800 rounded-lg shadow-2xl max-w-md w-full p-6">
                         <div className="text-center">
                             {/* Delete Icon */}

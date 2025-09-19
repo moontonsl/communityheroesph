@@ -176,14 +176,12 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
     return (
         <>
             <Head title="Apply Event">
-                {/* Global Poppins font is already set in CSS */}
+                 
             </Head>
             
             <Header />
 
-            {/* Main Content */}
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex items-center justify-center py-12 px-4 relative overflow-hidden welcome-background">
-                {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-5">
                     <div className="absolute inset-0" style={{
                         backgroundImage: `radial-gradient(circle at 25% 25%, #fbbf24 0%, transparent 50%), 
@@ -192,7 +190,6 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                 </div>
                 
                 <div className="w-full max-w-6xl mx-auto relative z-10">
-                    {/* Modern Form Title */}
                     <div className="text-center mb-12 animate-fade-in">
                         <div className="inline-block">
                             <h1 className="text-6xl font-black text-white mb-4 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent animate-gradient">
@@ -205,10 +202,8 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                         </p>
                     </div>
 
-                    {/* Modern Form Container */}
                     <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-500 animate-slide-up">
                         <form onSubmit={handleSubmit} className="space-y-12">
-                            {/* BARANGAY SELECTION Section */}
                             <div className="space-y-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
@@ -266,7 +261,6 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                                 </div>
                             </div>
 
-                            {/* EVENT DETAILS Section */}
                             <div className="space-y-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
@@ -435,7 +429,6 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                                 </div>
                             </div>
 
-                            {/* CONTACT INFORMATION Section */}
                             <div className="space-y-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
@@ -532,7 +525,6 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                                 </div>
                             </div>
 
-                            {/* EVENT DESCRIPTION Section */}
                             <div className="space-y-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
@@ -601,7 +593,6 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                                 </div>
                             </div>
 
-                            {/* PROPOSAL FILE UPLOAD Section */}
                             <div className="space-y-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
@@ -653,7 +644,6 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                                 </div>
                             </div>
 
-                            {/* Action Buttons */}
                             <div className="flex justify-center space-x-6 pt-8">
                                 <Link
                                     href="/Transaction"
