@@ -98,7 +98,7 @@ export default function Homepage() {
                 </div>
             </div>
 
-            {/* Analytics Dashboard Section - Only for Super Admins */}
+            {/* abang */}
             {isSuperAdmin && (
                 <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-800 min-h-screen py-16 overflow-hidden">
                     <div className="absolute inset-0 opacity-5">
@@ -169,7 +169,6 @@ export default function Homepage() {
                 </div>
             )}
 
-            {/* Quick Actions Section - Available to All Users */}
             <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-800 min-h-screen py-16 overflow-hidden">
                 <div className="absolute inset-0 opacity-5">
                     <div className="absolute inset-0" style={{
