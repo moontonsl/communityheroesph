@@ -5,24 +5,14 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Users, FileText, Settings } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Users, FileText, Settings, User } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Transactions',
-        href: '/Transaction',
-        icon: FileText,
-    },
-    {
-        title: 'My Barangays',
-        href: '/MyBarangay',
-        icon: Users,
+        title: 'Roles',
+        href: '/admin/roles',
+        icon: Settings,
     },
     {
         title: 'Admin Panel',
@@ -30,7 +20,13 @@ const mainNavItems: NavItem[] = [
         icon: Settings,
     },
 ];
-
+const mainNavItemsUser: NavItem[] = [
+    {
+        title: 'Account Management',
+        href: '/admin/account-management',
+        icon: User,
+    }
+];
 const footerNavItems: NavItem[] = [
     {
         title: 'Repository',
@@ -61,8 +57,9 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+                <NavMain items={mainNavItemsUser} />  
             </SidebarContent>
-
+            
             <SidebarFooter>
                 <NavUser />
             </SidebarFooter>
