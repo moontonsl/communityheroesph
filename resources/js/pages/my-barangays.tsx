@@ -33,8 +33,6 @@ export default function MyBarangays() {
     const loadSubmissions = async () => {
         try {
             setLoading(true);
-            // This would typically fetch user's submissions
-            // For demo purposes, we'll show sample data
             const sampleData: BarangaySubmission[] = [
                 {
                     id: 1,
@@ -117,22 +115,19 @@ export default function MyBarangays() {
     return (
         <>
             <Head title="My Barangays">
-                {/* Global Poppins font is already set in CSS */}
+
             </Head>
             
             <Header />
 
-            {/* Main Content with Background Image */}
             <div className="min-h-screen welcome-background relative">
                 <div className="relative z-10 pt-8">
                     <div className="max-w-7xl mx-auto px-4">
-                        {/* Page Title */}
                         <div className="text-center mb-8">
                             <h1 className="text-5xl font-bold text-white mb-2">MY BARANGAYS</h1>
                             <p className="text-yellow-400 text-lg">Track your barangay registration submissions</p>
                         </div>
 
-                        {/* Filter Buttons */}
                         <div className="flex justify-center mb-6">
                             <div className="bg-gray-800 rounded-lg p-1">
                                 <button
@@ -178,7 +173,6 @@ export default function MyBarangays() {
                             </div>
                         </div>
 
-                        {/* Submissions List */}
                         <div className="bg-gray-200/0 backdrop-blur-sm rounded-4xl p-6 shadow-2xl border-4 border-gray-500">
                             {loading ? (
                                 <div className="text-center py-12">
@@ -256,7 +250,6 @@ export default function MyBarangays() {
                             )}
                         </div>
 
-                        {/* Action Buttons */}
                         <div className="text-center mt-8">
                             <Link
                                 href="/Transaction"

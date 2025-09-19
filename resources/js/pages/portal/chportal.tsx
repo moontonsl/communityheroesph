@@ -400,7 +400,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
     return (
         <>
             <Head title="CHPortal">
-                {/* Global Poppins font is already set in CSS */}
+                 
             </Head>
             <Header />
             

@@ -21,7 +21,6 @@ class CheckAdminRole
 
         $user = auth()->user();
         
-        // Check if user has admin role (super-admin or community-admin)
         if (!$user->isSuperAdmin() && !$user->isCommunityAdmin()) {
             abort(403, 'Access denied. Admin privileges required.');
         }

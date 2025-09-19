@@ -77,7 +77,6 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData }: ViewInf
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-    // Helper function to get tier display name
     const getTierDisplayName = (tier: string): string => {
         switch (tier) {
             case 'BRONZE':
@@ -93,7 +92,6 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData }: ViewInf
         }
     };
 
-    // Helper function to get tier banner colors
     const getTierBannerColors = (tier: string): { main: string; ends: string; svgColor: string } => {
         switch (tier) {
             case 'BRONZE':

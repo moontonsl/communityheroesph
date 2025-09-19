@@ -61,7 +61,6 @@ class BarangaySubmission extends Model
         });
     }
 
-    // Relationships
     public function region(): BelongsTo
     {
         return $this->belongsTo(Region::class);
@@ -97,7 +96,6 @@ class BarangaySubmission extends Model
         return $this->hasMany(Event::class);
     }
 
-    // Status methods
     public function isPending(): bool
     {
         return $this->status === 'PENDING';
@@ -118,7 +116,6 @@ class BarangaySubmission extends Model
         return $this->status === 'UNDER_REVIEW';
     }
 
-    // Status change methods
     public function approve(User $user, string $notes = null): void
     {
         $this->update([
@@ -153,7 +150,6 @@ class BarangaySubmission extends Model
         ]);
     }
 
-    // Scopes
     public function scopePending($query)
     {
         return $query->where('status', 'PENDING');
@@ -174,7 +170,6 @@ class BarangaySubmission extends Model
         return $query->where('status', 'UNDER_REVIEW');
     }
 
-    // Tier methods
     public function isBronze(): bool
     {
         return $this->tier === 'BRONZE';
@@ -228,7 +223,6 @@ class BarangaySubmission extends Model
         };
     }
 
-    // Tier upgrade logic
     public function incrementSuccessfulEvents(): void
     {
         $this->increment('successful_events_count');
@@ -257,7 +251,6 @@ class BarangaySubmission extends Model
         };
     }
 
-    // Scopes for tiers
     public function scopeBronze($query)
     {
         return $query->where('tier', 'BRONZE');

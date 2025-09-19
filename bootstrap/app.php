@@ -24,12 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // Register admin middleware
         $middleware->alias([
             'admin' => CheckAdminRole::class,
             'redirect.admin' => RedirectAdminToTransaction::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
     })->create();

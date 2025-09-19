@@ -59,7 +59,6 @@ class Event extends Model
         });
     }
 
-    // Relationships
     public function barangaySubmission(): BelongsTo
     {
         return $this->belongsTo(BarangaySubmission::class);
@@ -80,7 +79,6 @@ class Event extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
-    // Status methods
     public function isPending(): bool
     {
         return $this->status === 'PENDING';
@@ -106,7 +104,6 @@ class Event extends Model
         return $this->status === 'CANCELLED';
     }
 
-    // Status change methods
     public function approve(User $user, string $notes = null): void
     {
         $this->update([
@@ -138,7 +135,6 @@ class Event extends Model
             'reviewed_at' => now()
         ]);
 
-        // If successful, increment the barangay's successful events count
         if ($successful) {
             $this->barangaySubmission->incrementSuccessfulEvents();
         }
@@ -154,7 +150,6 @@ class Event extends Model
         ]);
     }
 
-    // Scopes
     public function scopePending($query)
     {
         return $query->where('status', 'PENDING');

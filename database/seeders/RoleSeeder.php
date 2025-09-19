@@ -15,7 +15,6 @@ class RoleSeeder extends Seeder
     {
         $this->command->info('Creating roles...');
 
-        // Super Admin Role
         Role::create([
             'name' => 'Super Administrator',
             'slug' => 'super-admin',
@@ -44,7 +43,6 @@ class RoleSeeder extends Seeder
             'is_active' => true
         ]);
 
-        // Community Admin Role
         Role::create([
             'name' => 'Community Administrator',
             'slug' => 'community-admin',
@@ -61,7 +59,6 @@ class RoleSeeder extends Seeder
             'is_active' => true
         ]);
 
-        // Regular User Role
         Role::create([
             'name' => 'Regular User',
             'slug' => 'regular-user',
@@ -75,7 +72,6 @@ class RoleSeeder extends Seeder
             'is_active' => true
         ]);
 
-        // Barangay Representative Role
         Role::create([
             'name' => 'Barangay Representative',
             'slug' => 'barangay-representative',

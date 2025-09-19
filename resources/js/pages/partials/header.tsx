@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { LogOut, User, Menu, X, Home, Building, Calendar, Users, BarChart3, Settings } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SharedData } from '@/types';
 
 export default function Header() {
@@ -8,6 +8,11 @@ export default function Header() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
     const [isTransactionDropdownOpen, setIsTransactionDropdownOpen] = useState(false);
+    
+    // Refs for dropdown containers
+    const userDropdownRef = useRef<HTMLDivElement>(null);
+    const transactionDropdownRef = useRef<HTMLDivElement>(null);
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
 
     const navigationLinks = [
         { name: 'Home', href: '/homepage', icon: Home },
@@ -26,6 +31,33 @@ export default function Header() {
     ] : [];
 
     const allLinks = [...navigationLinks, ...adminLinks];
+
+    // Handle outside clicks to close dropdowns
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
+            
+            // Close user dropdown if clicking outside
+            if (isUserDropdownOpen && userDropdownRef.current && !userDropdownRef.current.contains(target)) {
+                setIsUserDropdownOpen(false);
+            }
+            
+            // Close transaction dropdown if clicking outside
+            if (isTransactionDropdownOpen && transactionDropdownRef.current && !transactionDropdownRef.current.contains(target)) {
+                setIsTransactionDropdownOpen(false);
+            }
+            
+            // Close mobile menu if clicking outside
+            if (isMobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(target)) {
+                setIsMobileMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isUserDropdownOpen, isTransactionDropdownOpen, isMobileMenuOpen]);
 
     return (
         <>
@@ -62,7 +94,7 @@ export default function Header() {
                                 })}
                                 
                                 {/* Transaction Dropdown */}
-                                <div className="relative">
+                                <div className="relative" ref={transactionDropdownRef}>
                                     <button
                                         onClick={() => setIsTransactionDropdownOpen(!isTransactionDropdownOpen)}
                                         className="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
@@ -118,7 +150,7 @@ export default function Header() {
                         <div className="flex items-center space-x-4">
                             {/* User Dropdown */}
                             {auth?.user && (
-                                <div className="hidden md:block relative">
+                                <div className="hidden md:block relative" ref={userDropdownRef}>
                                     <button
                                         onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                                         className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors duration-200"
@@ -175,7 +207,7 @@ export default function Header() {
                     
                     {/* Mobile Navigation Menu */}
                     {isMobileMenuOpen && (
-                        <div className="lg:hidden border-t border-white/10 bg-black/50 backdrop-blur-md">
+                        <div className="lg:hidden border-t border-white/10 bg-black/50 backdrop-blur-md" ref={mobileMenuRef}>
                             <nav className="px-4 py-4 space-y-2">
                                 {auth?.user ? (
                                     <>

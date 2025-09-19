@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Header from '@/pages/partials/header';
 
@@ -428,6 +428,8 @@ export default function RegisterBarangay() {
         disabled?: boolean;
         loading?: boolean;
     }) => {
+        const dropdownRef = useRef<HTMLDivElement>(null);
+
         const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             const query = e.target.value;
             setSearchValue(query);
@@ -444,12 +446,30 @@ export default function RegisterBarangay() {
             setTimeout(() => setShowDropdown(false), 200);
         };
 
+        // Handle outside clicks to close dropdown
+        useEffect(() => {
+            const handleClickOutside = (event: MouseEvent) => {
+                const target = event.target as Node;
+                if (showDropdown && dropdownRef.current && !dropdownRef.current.contains(target)) {
+                    setShowDropdown(false);
+                }
+            };
+
+            if (showDropdown) {
+                document.addEventListener('mousedown', handleClickOutside);
+            }
+
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, [showDropdown, setShowDropdown]);
+
         return (
             <div className="space-y-3">
                 <label className="block text-white font-semibold text-sm uppercase tracking-wider">
                     {label}
                 </label>
-                <div className="relative group">
+                <div className="relative group" ref={dropdownRef}>
                     <div className="relative">
                         <input
                             type="text"
@@ -528,7 +548,7 @@ export default function RegisterBarangay() {
     return (
         <>
             <Head title="Register Barangay">
-                {/* Global Poppins font is already set in CSS */}
+                 
             </Head>
             
             {/* Modern Header */}

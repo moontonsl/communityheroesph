@@ -6,7 +6,7 @@ export default function CHTransaction() {
     return (
         <>
             <Head title="CHTransaction">
-                {/* Global Poppins font is already set in CSS */}
+                 
             </Head>
             <Header />
             {/* Main Content with Background Image */}

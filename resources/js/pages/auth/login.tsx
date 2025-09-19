@@ -22,7 +22,7 @@ export default function Login() {
     return (
         <>
             <Head title="Login">
-                {/* Global Poppins font is already set in CSS */}
+                 
             </Head>
             
             <Header />

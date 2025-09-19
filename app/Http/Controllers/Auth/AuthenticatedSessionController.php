@@ -33,15 +33,12 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // Get the authenticated user
         $user = Auth::user();
 
-        // Redirect admin users to Transaction page
         if ($user && ($user->isSuperAdmin() || $user->isCommunityAdmin())) {
             return redirect()->intended(route('CHTransaction', absolute: false));
         }
 
-        // Redirect regular users to dashboard
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

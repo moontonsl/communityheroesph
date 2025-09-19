@@ -17,7 +17,6 @@ class AdminUserSeeder extends Seeder
     {
         $this->command->info('Creating admin users...');
 
-        // Get roles
         $superAdminRole = Role::where('slug', 'super-admin')->first();
         $communityAdminRole = Role::where('slug', 'community-admin')->first();
 
@@ -26,7 +25,6 @@ class AdminUserSeeder extends Seeder
             return;
         }
 
-        // Create Super Admin
         $superAdmin = User::updateOrCreate(
             ['email' => 'superadmin@communityheroes.ph'],
             [
@@ -41,7 +39,6 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
-        // Create Community Admin
         $communityAdmin = User::updateOrCreate(
             ['email' => 'communityadmin@communityheroes.ph'],
             [
@@ -56,7 +53,6 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
-        // Create additional Community Admin
         $communityAdmin2 = User::updateOrCreate(
             ['email' => 'admin@communityheroes.ph'],
             [
