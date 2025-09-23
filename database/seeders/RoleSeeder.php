@@ -16,9 +16,9 @@ class RoleSeeder extends Seeder
         $this->command->info('Creating roles...');
 
         Role::updateOrCreate(
-            ['name' => 'Super Administrator'],
+            ['slug' => 'super-admin'],
             [
-                'slug' => 'super-admin',
+                'name' => 'Super Administrator',
                 'description' => 'Full system access with all permissions',
                 'permissions' => [
                     'users.create',
@@ -45,117 +45,107 @@ class RoleSeeder extends Seeder
             ]
         );
 
+
+
         Role::updateOrCreate(
-            ['name' => 'Community Administrator'],
+            ['slug' => 'area-admin'],
             [
-                'slug' => 'community-admin',
-                'description' => 'Community management with submission approval permissions',
+                'name' => 'Area Admin',
+                'description' => 'Area administrator with regional management permissions',
                 'permissions' => [
+                    'submissions.create',
                     'submissions.read',
                     'submissions.update',
                     'submissions.approve',
                     'submissions.reject',
-                    'submissions.review',
+                    'users.read',
                     'reports.read',
-                    'users.read'
+                    'profile.read',
+                    'profile.update'
                 ],
                 'is_active' => true
             ]
         );
 
+        Role::updateOrCreate(
+            ['slug' => 'community-lead'],
+            [
+                'name' => 'Community Lead',
+                'description' => 'Community leader with local management permissions',
+                'permissions' => [
+                    'submissions.create',
+                    'submissions.read',
+                    'submissions.update.own',
+                    'reports.read.own',
+                    'users.read',
+                    'profile.read',
+                    'profile.update'
+                ],
+                'is_active' => true
+            ]
+        );
 
+        Role::updateOrCreate(
+            ['slug' => 'super-admin-a'],
+            [
+                'name' => 'Super Admin A',
+                'description' => 'Super Administrator A with full system access',
+                'permissions' => [
+                    'users.create',
+                    'users.read',
+                    'users.update',
+                    'users.delete',
+                    'roles.create',
+                    'roles.read',
+                    'roles.update',
+                    'roles.delete',
+                    'submissions.create',
+                    'submissions.read',
+                    'submissions.update',
+                    'submissions.delete',
+                    'submissions.approve',
+                    'submissions.reject',
+                    'submissions.review',
+                    'reports.read',
+                    'reports.export',
+                    'settings.read',
+                    'settings.update',
+                    'system.admin'
+                ],
+                'is_active' => true
+            ]
+        );
 
-        Role::create([
-            'name' => 'Area Admin',
-            'slug' => 'area-admin',
-            'description' => 'Area administrator with regional management permissions',
-            'permissions' => [
-                'submissions.create',
-                'submissions.read',
-                'submissions.update',
-                'submissions.approve',
-                'submissions.reject',
-                'users.read',
-                'reports.read',
-                'profile.read',
-                'profile.update'
-            ],
-            'is_active' => true
-        ]);
-
-        Role::create([
-            'name' => 'Community Lead',
-            'slug' => 'community-lead',
-            'description' => 'Community leader with local management permissions',
-            'permissions' => [
-                'submissions.create',
-                'submissions.read',
-                'submissions.update.own',
-                'reports.read.own',
-                'users.read',
-                'profile.read',
-                'profile.update'
-            ],
-            'is_active' => true
-        ]);
-
-        Role::create([
-            'name' => 'Super Admin A',
-            'slug' => 'super-admin-a',
-            'description' => 'Super Administrator A with full system access',
-            'permissions' => [
-                'users.create',
-                'users.read',
-                'users.update',
-                'users.delete',
-                'roles.create',
-                'roles.read',
-                'roles.update',
-                'roles.delete',
-                'submissions.create',
-                'submissions.read',
-                'submissions.update',
-                'submissions.delete',
-                'submissions.approve',
-                'submissions.reject',
-                'submissions.review',
-                'reports.read',
-                'reports.export',
-                'settings.read',
-                'settings.update',
-                'system.admin'
-            ],
-            'is_active' => true
-        ]);
-
-        Role::create([
-            'name' => 'Super Admin B',
-            'slug' => 'super-admin-b',
-            'description' => 'Super Administrator B with full system access',
-            'permissions' => [
-                'users.create',
-                'users.read',
-                'users.update',
-                'users.delete',
-                'roles.create',
-                'roles.read',
-                'roles.update',
-                'roles.delete',
-                'submissions.create',
-                'submissions.read',
-                'submissions.update',
-                'submissions.delete',
-                'submissions.approve',
-                'submissions.reject',
-                'submissions.review',
-                'reports.read',
-                'reports.export',
-                'settings.read',
-                'settings.update',
-                'system.admin'
-            ],
-            'is_active' => true
-        ]);
+        Role::updateOrCreate(
+            ['slug' => 'super-admin-b'],
+            [
+                'name' => 'Super Admin B',
+                'description' => 'Super Administrator B with full system access',
+                'permissions' => [
+                    'users.create',
+                    'users.read',
+                    'users.update',
+                    'users.delete',
+                    'roles.create',
+                    'roles.read',
+                    'roles.update',
+                    'roles.delete',
+                    'submissions.create',
+                    'submissions.read',
+                    'submissions.update',
+                    'submissions.delete',
+                    'submissions.approve',
+                    'submissions.reject',
+                    'submissions.review',
+                    'reports.read',
+                    'reports.export',
+                    'settings.read',
+                    'settings.update',
+                    'system.admin'
+                ],
+                'is_active' => true
+            ]
+        );
 
         $this->command->info('Roles created successfully!');
     }
