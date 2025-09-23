@@ -4,6 +4,7 @@ import ApprovalModal from './approvalModal';
 import ReturnModal from './returnModal';
 import DeleteModal from './deleteModal';
 import styles from '@/components/CSS/CHTransaction.module.css';
+import { router } from '@inertiajs/react';
 
 interface BarangayData {
     id: number;
@@ -167,6 +168,46 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData }: ViewInf
         setIsDeleteModalOpen(false);
     };
 
+    const handleReApply = () => {
+        // Format date for HTML date input (YYYY-MM-DD)
+        const formatDateForInput = (dateString: string) => {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString);
+                return date.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+            } catch (error) {
+                console.error('Error formatting date:', error);
+                return '';
+            }
+        };
+
+        // Prepare pre-fill data from existing barangay data
+        const preFillData = {
+            regionId: barangayData.region?.id?.toString() || '',
+            regionName: barangayData.region_name || '',
+            provinceId: barangayData.province?.id?.toString() || '',
+            provinceName: barangayData.province_name || '',
+            municipalityId: barangayData.municipality?.id?.toString() || '',
+            municipalityName: barangayData.municipality_name || '',
+            barangayId: barangayData.barangay?.id?.toString() || '',
+            barangayName: barangayData.barangay_name || '',
+            zipCode: barangayData.zip_code || '',
+            population: barangayData.population?.toString() || '',
+            secondPartyName: barangayData.second_party_name || '',
+            position: barangayData.position || '',
+            dateSigned: formatDateForInput(barangayData.date_signed),
+            stage: 'RENEWAL' as const
+        };
+
+        // Navigate to register barangay page with pre-fill data
+        router.visit('/registerbarangay', {
+            method: 'get',
+            data: {
+                prefill: JSON.stringify(preFillData)
+            }
+        });
+    };
+
     return (
         <>
             {/* Modern Modal Overlay */}
@@ -180,10 +221,22 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData }: ViewInf
                     <div className="flex justify-between items-center p-8 border-b border-white/20">
                         <div className="flex items-center space-x-4">
                             <div className="relative group">
-                                <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg group-hover:scale-105 transition-transform duration-300">
-                                    NEW
+                                <div className={`text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg group-hover:scale-105 transition-transform duration-300 ${
+                                    barangayData.status === 'PENDING' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' :
+                                    barangayData.status === 'APPROVED' ? 'bg-gradient-to-r from-green-500 to-green-600' :
+                                    barangayData.status === 'REJECTED' ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                                    barangayData.status === 'UNDER_REVIEW' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                                    'bg-gradient-to-r from-gray-500 to-gray-600'
+                                }`}>
+                                    {barangayData.status}
                                 </div>
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
+                                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full animate-pulse ${
+                                    barangayData.status === 'PENDING' ? 'bg-yellow-400' :
+                                    barangayData.status === 'APPROVED' ? 'bg-green-400' :
+                                    barangayData.status === 'REJECTED' ? 'bg-red-400' :
+                                    barangayData.status === 'UNDER_REVIEW' ? 'bg-blue-400' :
+                                    'bg-gray-400'
+                                }`}></div>
                             </div>
                             <div className="flex items-center space-x-3">
                                 <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
@@ -201,6 +254,38 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData }: ViewInf
                             </div>
                         </div>
                     </div>
+
+                    {/* Rejection Reason Section - Only show when status is REJECTED */}
+                    {barangayData.status === 'REJECTED' && barangayData.rejection_reason && (
+                        <div className="mt-6 mx-8 mb-4 bg-red-500/10 backdrop-blur-sm rounded-md p-6 border border-red-500/20 hover:bg-red-500/15 transition-all duration-300">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-1 h-6 bg-gradient-to-b from-red-400 to-red-600 rounded-full"></div>
+                                    <h4 className="text-white font-bold text-xl">Rejection Reason</h4>
+                                </div>
+                                <button 
+                                    onClick={handleReApply}
+                                    className="group relative inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-blue-600 
+                                        rounded-md shadow-lg hover:shadow-blue-500/25 transition-all duration-300 
+                                        hover:from-blue-400 hover:to-blue-500 hover:scale-105 
+                                        focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-gray-900"
+                                >
+                                    <span className="relative z-10 flex items-center space-x-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        <span>Re-apply</span>
+                                    </span>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                </button>
+                            </div>
+                            <div className="bg-red-900/20 rounded-lg p-4 border border-red-500/30">
+                                <div className="text-red-100 leading-relaxed">
+                                    {barangayData.rejection_reason}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Modern Modal Content */}
                     <div className="p-8">
@@ -373,6 +458,8 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData }: ViewInf
                                 </div>
                             </div>
                         </div>
+
+
 
                         {/* Modern Action Buttons */}
                         <div className="flex flex-wrap justify-center gap-4 mt-8 pt-8 border-t border-white/20">

@@ -10,22 +10,43 @@ interface LocationOption {
     population?: number;
 }
 
-export default function RegisterBarangay() {
+interface PreFillData {
+    regionId?: string;
+    regionName?: string;
+    provinceId?: string;
+    provinceName?: string;
+    municipalityId?: string;
+    municipalityName?: string;
+    barangayId?: string;
+    barangayName?: string;
+    zipCode?: string;
+    population?: string;
+    secondPartyName?: string;
+    position?: string;
+    dateSigned?: string;
+    stage?: 'NEW' | 'RENEWAL';
+}
+
+interface RegisterBarangayProps {
+    preFillData?: PreFillData;
+}
+
+export default function RegisterBarangay({ preFillData }: RegisterBarangayProps = {}) {
     const [formData, setFormData] = useState({
-        regionId: '',
-        regionName: '',
-        provinceId: '',
-        provinceName: '',
-        municipalityId: '',
-        municipalityName: '',
-        barangayId: '',
-        barangayName: '',
-        zipCode: '',
-        population: '',
-        secondPartyName: '',
-        position: '',
-        dateSigned: '',
-        stage: 'NEW',
+        regionId: preFillData?.regionId || '',
+        regionName: preFillData?.regionName || '',
+        provinceId: preFillData?.provinceId || '',
+        provinceName: preFillData?.provinceName || '',
+        municipalityId: preFillData?.municipalityId || '',
+        municipalityName: preFillData?.municipalityName || '',
+        barangayId: preFillData?.barangayId || '',
+        barangayName: preFillData?.barangayName || '',
+        zipCode: preFillData?.zipCode || '',
+        population: preFillData?.population || '',
+        secondPartyName: preFillData?.secondPartyName || '',
+        position: preFillData?.position || '',
+        dateSigned: preFillData?.dateSigned || '',
+        stage: preFillData?.stage || 'RENEWAL', // Change to RENEWAL for re-apply
         moaFile: null as File | null
     });
 
@@ -57,6 +78,36 @@ export default function RegisterBarangay() {
     useEffect(() => {
         loadRegions();
     }, []);
+
+    // Handle pre-fill data
+    useEffect(() => {
+        if (preFillData) {
+            // Set search fields to match selected values
+            if (preFillData.regionName) {
+                setRegionSearch(preFillData.regionName);
+            }
+            if (preFillData.provinceName) {
+                setProvinceSearch(preFillData.provinceName);
+            }
+            if (preFillData.municipalityName) {
+                setMunicipalitySearch(preFillData.municipalityName);
+            }
+            if (preFillData.barangayName) {
+                setBarangaySearch(preFillData.barangayName);
+            }
+
+            // Load dependent dropdowns
+            if (preFillData.regionId) {
+                loadProvinces(preFillData.regionId);
+            }
+            if (preFillData.provinceId) {
+                loadMunicipalities(preFillData.provinceId);
+            }
+            if (preFillData.municipalityId) {
+                loadBarangays(preFillData.municipalityId);
+            }
+        }
+    }, [preFillData]);
 
     // Load regions
     const loadRegions = async () => {
