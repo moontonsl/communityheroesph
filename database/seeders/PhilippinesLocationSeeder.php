@@ -121,7 +121,7 @@ class PhilippinesLocationSeeder extends Seeder
             $psgcCode = (string)$item['10-digit PSGC'];
             $municipalityCode = substr($psgcCode, 0, 6);
             
-            $population = $item['Population'];
+            $population = $item['Population'] ?? null;
             if ($population === '-' || $population === '' || !is_numeric($population)) {
                 $population = null;
             } else {
