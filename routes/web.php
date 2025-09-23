@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -8,15 +9,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/homepage', [App\Http\Controllers\HomepageController::class, 'index'])->name('homepage');
 
-    Route::get('/registerbarangay', function () {
-        return Inertia::render('registerbarangay');
+    Route::get('/registerbarangay', function (Request $request) {
+        $preFillData = null;
+        
+        // Check if there's pre-fill data in the request
+        if ($request->has('prefill')) {
+            $preFillData = json_decode($request->get('prefill'), true);
+        }
+        
+        return Inertia::render('registerbarangay', [
+            'preFillData' => $preFillData
+        ]);
     })->name('registerbarangay');
 });
 
 Route::middleware(['auth', 'verified', 'redirect.admin'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('/', [App\Http\Controllers\HomepageController::class, 'index'])->name('home');
     
     // Admin routes
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
