@@ -67,5 +67,25 @@ class Role extends Model
         return static::where('slug', 'community-admin')->first();
     }
 
+    public static function areaAdmin(): self
+    {
+        return static::where('slug', 'area-admin')->first();
+    }
+
+    public static function communityLead(): self
+    {
+        return static::where('slug', 'community-lead')->first();
+    }
+
+    public static function superAdminA(): self
+    {
+        return static::where('slug', 'super-admin-a')->first();
+    }
+
+    public static function superAdminB(): self
+    {
+        return static::where('slug', 'super-admin-b')->first();
+    }
+
 
 }
