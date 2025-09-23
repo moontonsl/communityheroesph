@@ -22,7 +22,7 @@ class AccountManagementController extends Controller
             ->latest()
             ->paginate(10);
 
-        $roles = Role::active()->where('slug', '!=', 'regular-user')->get();
+        $roles = Role::active()->whereNotIn('slug', ['regular-user', 'community-admin'])->get();
 
         return Inertia::render('admin/account-management', [
             'users' => $users,
