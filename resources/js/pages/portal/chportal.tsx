@@ -208,8 +208,6 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                 return 'Super Admin';
             case 'community-admin':
                 return 'Community Admin';
-            case 'regular-user':
-                return 'Regular User';
             default:
                 return 'User';
         }

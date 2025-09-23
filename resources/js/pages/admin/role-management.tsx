@@ -164,8 +164,6 @@ export default function RoleManagement({ roles, availablePermissions }: Props) {
                 return 'default';
             case 'barangay-representative':
                 return 'secondary';
-            case 'regular-user':
-                return 'outline';
             default:
                 return 'secondary';
         }
