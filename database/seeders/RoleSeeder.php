@@ -59,18 +59,7 @@ class RoleSeeder extends Seeder
             'is_active' => true
         ]);
 
-        Role::create([
-            'name' => 'Regular User',
-            'slug' => 'regular-user',
-            'description' => 'Basic user with submission creation permissions',
-            'permissions' => [
-                'submissions.create',
-                'submissions.read.own',
-                'profile.read',
-                'profile.update'
-            ],
-            'is_active' => true
-        ]);
+
 
         Role::create([
             'name' => 'Barangay Representative',

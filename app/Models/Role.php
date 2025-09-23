@@ -67,8 +67,5 @@ class Role extends Model
         return static::where('slug', 'community-admin')->first();
     }
 
-    public static function regularUser(): self
-    {
-        return static::where('slug', 'regular-user')->first();
-    }
+
 }
