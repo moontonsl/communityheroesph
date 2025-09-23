@@ -1,6 +1,7 @@
-import { Head, Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
 import Header from '@/pages/partials/header';
+import { SharedData } from '@/types';
 
 interface BarangaySubmission {
     id: number;
@@ -17,17 +18,21 @@ interface ApplyEventProps {
 }
 
 export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
+    const { auth } = usePage<SharedData>().props;
+    const user = auth.user;
+    
     const [formData, setFormData] = useState({
         barangaySubmissionId: '',
         eventName: '',
         eventDescription: '',
         eventDate: '',
+        campaign: '',
         eventLocation: '',
         expectedParticipants: '',
         eventType: '',
-        contactPerson: '',
-        contactNumber: '',
-        contactEmail: '',
+        contactPerson: user.name,
+        contactNumber: user.phone || '',
+        contactEmail: user.email,
         requirements: '',
         proposalFile: null as File | null
     });
@@ -103,6 +108,7 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                 event_name: formData.eventName,
                 event_description: formData.eventDescription,
                 event_date: formData.eventDate,
+                campaign: formData.campaign,
                 event_location: formData.eventLocation,
                 expected_participants: parseInt(formData.expectedParticipants),
                 event_type: formData.eventType,
@@ -147,12 +153,13 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                     eventName: '',
                     eventDescription: '',
                     eventDate: '',
+                    campaign: '',
                     eventLocation: '',
                     expectedParticipants: '',
                     eventType: '',
-                    contactPerson: '',
-                    contactNumber: '',
-                    contactEmail: '',
+                    contactPerson: user.name,
+                    contactNumber: user.phone || '',
+                    contactEmail: user.email,
                     requirements: '',
                     proposalFile: null
                 });
@@ -359,6 +366,39 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                                     </div>
                                     <div className="space-y-3">
                                         <label className="block text-white font-semibold text-sm uppercase tracking-wider">
+                                            Campaign
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                value={formData.campaign}
+                                                onChange={(e) => handleInputChange('campaign', e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white 
+                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                    transition-all duration-300 hover:bg-white/15"
+                                                required
+                                                style={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                    color: 'white',
+                                                    WebkitAppearance: 'none',
+                                                    MozAppearance: 'none',
+                                                    appearance: 'none'
+                                                }}
+                                            >
+                                                <option value="" style={{ backgroundColor: '#1f2937', color: 'white' }}>Select Campaign</option>
+                                                <option value="Next 2025" style={{ backgroundColor: '#1f2937', color: 'white' }}>Next 2025</option>
+                                                <option value="9th Anniversary" style={{ backgroundColor: '#1f2937', color: 'white' }}>9th Anniversary</option>
+                                                <option value="Carnival 2025" style={{ backgroundColor: '#1f2937', color: 'white' }}>Carnival 2025</option>
+                                                <option value="Golden Month 2026" style={{ backgroundColor: '#1f2937', color: 'white' }}>Golden Month 2026</option>
+                                            </select>
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
                                             Event Location
                                         </label>
                                         <div className="relative">
@@ -429,101 +469,6 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                                 </div>
                             </div>
 
-                            <div className="space-y-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
-                                    <h2 className="text-3xl font-bold text-white">Contact Information</h2>
-                                </div>
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    <div className="space-y-3">
-                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
-                                            Contact Person
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                value={formData.contactPerson}
-                                                onChange={(e) => handleInputChange('contactPerson', e.target.value)}
-                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 
-                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
-                                                    transition-all duration-300 hover:bg-white/15"
-                                                placeholder="Full name"
-                                                required
-                                                style={{
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                                    color: 'white',
-                                                    WebkitAppearance: 'none',
-                                                    MozAppearance: 'none',
-                                                    appearance: 'none'
-                                                }}
-                                            />
-                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
-                                            Contact Number
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="tel"
-                                                value={formData.contactNumber}
-                                                onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 
-                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
-                                                    transition-all duration-300 hover:bg-white/15"
-                                                placeholder="+63 917 123 4567"
-                                                required
-                                                style={{
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                                    color: 'white',
-                                                    WebkitAppearance: 'none',
-                                                    MozAppearance: 'none',
-                                                    appearance: 'none'
-                                                }}
-                                            />
-                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="lg:col-span-2 space-y-3">
-                                        <label className="block text-white font-semibold text-sm uppercase tracking-wider">
-                                            Email Address
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="email"
-                                                value={formData.contactEmail}
-                                                onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 
-                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
-                                                    transition-all duration-300 hover:bg-white/15"
-                                                placeholder="contact@example.com"
-                                                required
-                                                style={{
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                                    color: 'white',
-                                                    WebkitAppearance: 'none',
-                                                    MozAppearance: 'none',
-                                                    appearance: 'none'
-                                                }}
-                                            />
-                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
 
                             <div className="space-y-6">
                                 <div className="flex items-center space-x-4">
