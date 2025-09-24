@@ -51,15 +51,11 @@ class RoleSeeder extends Seeder
             ['slug' => 'area-admin'],
             [
                 'name' => 'Area Admin',
-                'description' => 'Area administrator with regional management permissions',
+                'description' => 'Can apply for barangays and events',
                 'permissions' => [
-                    'submissions.create',
-                    'submissions.read',
-                    'submissions.update',
-                    'submissions.approve',
-                    'submissions.reject',
-                    'users.read',
-                    'reports.read',
+                    'barangays.apply',
+                    'events.apply',
+                    'submissions.read.own',
                     'profile.read',
                     'profile.update'
                 ],
@@ -71,13 +67,13 @@ class RoleSeeder extends Seeder
             ['slug' => 'community-lead'],
             [
                 'name' => 'Community Lead',
-                'description' => 'Community leader with local management permissions',
+                'description' => 'Can apply for barangays and events, pre-approve Area Admin applications',
                 'permissions' => [
-                    'submissions.create',
+                    'barangays.apply',
+                    'events.apply',
+                    'submissions.pre_approve',
                     'submissions.read',
-                    'submissions.update.own',
-                    'reports.read.own',
-                    'users.read',
+                    'submissions.approve',
                     'profile.read',
                     'profile.update'
                 ],
@@ -89,28 +85,18 @@ class RoleSeeder extends Seeder
             ['slug' => 'super-admin-a'],
             [
                 'name' => 'Super Admin A',
-                'description' => 'Super Administrator A with full system access',
+                'description' => 'Can apply for barangays and events, final approval of MOA and Event Applications (must be pre-approved by Community Lead)',
                 'permissions' => [
-                    'users.create',
-                    'users.read',
-                    'users.update',
-                    'users.delete',
-                    'roles.create',
-                    'roles.read',
-                    'roles.update',
-                    'roles.delete',
-                    'submissions.create',
+                    'barangays.apply',
+                    'events.apply',
+                    'submissions.final_approve',
                     'submissions.read',
-                    'submissions.update',
-                    'submissions.delete',
                     'submissions.approve',
                     'submissions.reject',
-                    'submissions.review',
-                    'reports.read',
-                    'reports.export',
                     'settings.read',
                     'settings.update',
-                    'system.admin'
+                    'profile.read',
+                    'profile.update'
                 ],
                 'is_active' => true
             ]
@@ -120,28 +106,17 @@ class RoleSeeder extends Seeder
             ['slug' => 'super-admin-b'],
             [
                 'name' => 'Super Admin B',
-                'description' => 'Super Administrator B with full system access',
+                'description' => 'Can see/access all applications',
                 'permissions' => [
-                    'users.create',
-                    'users.read',
-                    'users.update',
-                    'users.delete',
-                    'roles.create',
-                    'roles.read',
-                    'roles.update',
-                    'roles.delete',
-                    'submissions.create',
-                    'submissions.read',
-                    'submissions.update',
-                    'submissions.delete',
-                    'submissions.approve',
-                    'submissions.reject',
-                    'submissions.review',
+                    'submissions.read.all',
+                    'events.read.all',
+                    'barangays.read.all',
                     'reports.read',
                     'reports.export',
                     'settings.read',
                     'settings.update',
-                    'system.admin'
+                    'profile.read',
+                    'profile.update'
                 ],
                 'is_active' => true
             ]

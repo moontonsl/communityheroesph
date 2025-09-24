@@ -93,7 +93,8 @@ export default function Header() {
                                     );
                                 })}
                                 
-                                {/* Transaction Dropdown */}
+                                {/* Transaction Dropdown - Hidden for Super Admin B */}
+                                {auth?.user?.role?.slug !== 'super-admin-b' && (
                                 <div className="relative" ref={transactionDropdownRef}>
                                     <button
                                         onClick={() => setIsTransactionDropdownOpen(!isTransactionDropdownOpen)}
@@ -130,6 +131,7 @@ export default function Header() {
                                         </div>
                                     )}
                                 </div>
+                                )}
                                 
                                 {/* Admin Links */}
                                 {adminLinks.map((link) => {

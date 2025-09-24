@@ -84,7 +84,7 @@ interface EventData {
     requirements: string;
     proposal_file_path: string;
     proposal_file_name: string;
-    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED';
+    status: 'PENDING' | 'PRE_APPROVED' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED' | 'CLEARED';
     rejection_reason?: string;
     admin_notes?: string;
     approved_by?: number;
@@ -95,7 +95,7 @@ interface EventData {
     completed_at?: string;
     created_at: string;
     updated_at: string;
-    barangaySubmission?: {
+    barangay_submission?: {
         id: number;
         barangay_name: string;
         municipality_name: string;
@@ -145,11 +145,13 @@ interface EventData {
 interface Stats {
     total: number;
     pending: number;
+    pre_approved?: number;
     approved: number;
     rejected: number;
     under_review: number;
     completed?: number;
     cancelled?: number;
+    cleared?: number;
     this_month: number;
     this_week: number;
 }
@@ -186,7 +188,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
     const [activeTab, setActiveTab] = useState<'pending' | 'renewals' | 'approved' | 'masterlist'>('pending');
     
     // Tab state for events
-    const [activeEventTab, setActiveEventTab] = useState<'new' | 'approved' | 'all'>('new');
+    const [activeEventTab, setActiveEventTab] = useState<'new' | 'pre-approved' | 'approved' | 'cleared' | 'all'>('new');
     
     // View mode state (barangays or events)
     const [viewMode, setViewMode] = useState<'barangays' | 'events'>('barangays');
@@ -206,6 +208,10 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
         switch (roleSlug) {
             case 'super-admin':
                 return 'Super Admin';
+            case 'super-admin-a':
+                return 'Super Admin A';
+            case 'super-admin-b':
+                return 'Super Admin B';
             case 'community-admin':
                 return 'Community Admin';
             default:
@@ -266,8 +272,12 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
             // Filter events by tab
             if (activeEventTab === 'new') {
                 data = data.filter(item => item.status === 'PENDING');
+            } else if (activeEventTab === 'pre-approved') {
+                data = data.filter(item => item.status === 'PRE_APPROVED');
             } else if (activeEventTab === 'approved') {
                 data = data.filter(item => item.status === 'APPROVED');
+            } else if (activeEventTab === 'cleared') {
+                data = data.filter(item => item.status === 'CLEARED');
             }
             // 'all' shows all events (no filtering)
             
@@ -455,18 +465,20 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                             
                             {/* Right Side - Account Status */}
                             <div className="text-right">
-                                <Link href="/settings/profile" className="group relative inline-flex items-center justify-center px-8 py-3 text-sm font-bold text-white bg-gradient-to-r from-red-500 to-red-600 
-                                    rounded-md shadow-2xl hover:shadow-red-500/25 transition-all duration-300 
-                                    hover:from-red-400 hover:to-red-500 hover:scale-105 
-                                    focus:outline-none focus:ring-4 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-gray-900">
-                                    <span className="relative z-10 flex items-center space-x-2">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                        <span>Account Settings</span>
-                                    </span>
-                                    <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                </Link>
+                                {(user.role.slug === 'super-admin' || user.role.slug === 'super-admin-a') && (
+                                    <Link href="/settings/profile" className="group relative inline-flex items-center justify-center px-8 py-3 text-sm font-bold text-white bg-gradient-to-r from-red-500 to-red-600 
+                                        rounded-md shadow-2xl hover:shadow-red-500/25 transition-all duration-300 
+                                        hover:from-red-400 hover:to-red-500 hover:scale-105 
+                                        focus:outline-none focus:ring-4 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-gray-900">
+                                        <span className="relative z-10 flex items-center space-x-2">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                            <span>Account Settings</span>
+                                        </span>
+                                        <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -643,6 +655,20 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                 </span>
                             </button>
                             <button 
+                                onClick={() => setActiveEventTab('pre-approved')}
+                                className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    activeEventTab === 'pre-approved'
+                                        ? 'text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-2xl hover:shadow-blue-500/25 hover:from-blue-400 hover:to-blue-500 focus:ring-blue-500/50'
+                                        : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                                }`}>
+                                <span className="relative z-10 flex items-center space-x-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Pre-Approved Events ({eventStats.pre_approved || 0})</span>
+                                </span>
+                            </button>
+                            <button 
                                 onClick={() => setActiveEventTab('approved')}
                                 className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
                                     activeEventTab === 'approved'
@@ -654,6 +680,20 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                                     </svg>
                                     <span>Approved Events ({eventStats.approved})</span>
+                                </span>
+                            </button>
+                            <button 
+                                onClick={() => setActiveEventTab('cleared')}
+                                className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    activeEventTab === 'cleared'
+                                        ? 'text-white bg-gradient-to-r from-gray-500 to-gray-600 shadow-2xl hover:shadow-gray-500/25 hover:from-gray-400 hover:to-gray-500 focus:ring-gray-500/50'
+                                        : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                                }`}>
+                                <span className="relative z-10 flex items-center space-x-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Cleared Events ({eventStats.cleared || 0})</span>
                                 </span>
                             </button>
                             <button 
@@ -682,7 +722,9 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                 <h3 className="text-3xl font-bold text-white">
                                     {viewMode === 'events' ? 'Event Management' : 'Barangay Management'}
                                     {viewMode === 'events' && activeEventTab === 'new' && ' - New Events'}
+                                    {viewMode === 'events' && activeEventTab === 'pre-approved' && ' - Pre-Approved Events'}
                                     {viewMode === 'events' && activeEventTab === 'approved' && ' - Approved Events'}
+                                    {viewMode === 'events' && activeEventTab === 'cleared' && ' - Cleared Events'}
                                     {viewMode === 'events' && activeEventTab === 'all' && ' - All Events'}
                                     {viewMode === 'barangays' && activeTab === 'pending' && ' - Pending Approval'}
                                     {viewMode === 'barangays' && activeTab === 'renewals' && ' - Renewals'}
@@ -830,13 +872,15 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                                 <div className="text-white text-sm font-medium">{(item as EventData).event_name}</div>
                                                 <div className="text-white text-sm">{(item as EventData).event_location}</div>
                                                 <div className="text-white text-sm">{new Date((item as EventData).event_date).toLocaleDateString()}</div>
-                                                <div className="text-white text-sm">{(item as EventData).barangaySubmission?.barangay_name || 'N/A'}</div>
+                                                <div className="text-white text-sm">{(item as EventData).barangay_submission?.barangay_name || 'N/A'}</div>
                                                 <div className="text-white text-sm">{(item as EventData).contact_person}</div>
                                                 <div className={`text-sm font-semibold ${
                                                     (item as EventData).status === 'APPROVED' ? 'text-green-400' :
+                                                    (item as EventData).status === 'PRE_APPROVED' ? 'text-blue-400' :
                                                     (item as EventData).status === 'PENDING' ? 'text-yellow-400' :
                                                     (item as EventData).status === 'REJECTED' ? 'text-red-400' :
-                                                    (item as EventData).status === 'COMPLETED' ? 'text-blue-400' : 'text-gray-400'
+                                                    (item as EventData).status === 'COMPLETED' ? 'text-blue-400' :
+                                                    (item as EventData).status === 'CLEARED' ? 'text-gray-400' : 'text-gray-400'
                                                 }`}>
                                                     {(item as EventData).status}
                                                 </div>
@@ -921,15 +965,17 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                                     </div>
                                                     <div className={`text-sm font-bold px-3 py-1 rounded-full ${
                                                         (item as EventData).status === 'APPROVED' ? 'text-green-400 bg-green-400/20' :
+                                                        (item as EventData).status === 'PRE_APPROVED' ? 'text-blue-400 bg-blue-400/20' :
                                                         (item as EventData).status === 'PENDING' ? 'text-yellow-400 bg-yellow-400/20' :
                                                         (item as EventData).status === 'REJECTED' ? 'text-red-400 bg-red-400/20' :
-                                                        (item as EventData).status === 'COMPLETED' ? 'text-blue-400 bg-blue-400/20' : 'text-gray-400 bg-gray-400/20'
+                                                        (item as EventData).status === 'COMPLETED' ? 'text-blue-400 bg-blue-400/20' :
+                                                        (item as EventData).status === 'CLEARED' ? 'text-gray-400 bg-gray-400/20' : 'text-gray-400 bg-gray-400/20'
                                                     }`}>
                                                         {(item as EventData).status}
                                                     </div>
                                                 </div>
                                                 <div className="text-gray-300 text-sm mb-2">
-                                                    <span className="text-gray-400">Barangay:</span> {(item as EventData).barangaySubmission?.barangay_name || 'N/A'}
+                                                    <span className="text-gray-400">Barangay:</span> {(item as EventData).barangay_submission?.barangay_name || 'N/A'}
                                                 </div>
                                                 <div className="text-gray-300 text-sm mb-4">
                                                     <span className="text-gray-400">Contact:</span> {(item as EventData).contact_person}

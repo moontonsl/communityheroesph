@@ -6,9 +6,11 @@ use Inertia\Inertia;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', [App\Http\Controllers\HomepageController::class, 'index'])->name('home');
-
     Route::get('/homepage', [App\Http\Controllers\HomepageController::class, 'index'])->name('homepage');
+});
 
+// Barangay Application Routes - Area Admin, Community Lead, Super Admin A
+Route::middleware(['auth', 'verified', 'role:barangays.apply'])->group(function () {
     Route::get('/registerbarangay', function (Request $request) {
         $preFillData = null;
         
@@ -23,24 +25,57 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('registerbarangay');
 });
 
+// Event Application Routes - Area Admin, Community Lead, Super Admin A
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/apply-event', function () {
+        // Get approved barangays for the current user
+        $approvedBarangays = \App\Models\BarangaySubmission::where('status', 'APPROVED')
+            ->with(['region', 'province', 'municipality', 'barangay'])
+            ->get();
+        
+        \Log::info('=== APPLY EVENT ROUTE DEBUG ===');
+        \Log::info('Approved barangays count: ' . $approvedBarangays->count());
+        \Log::info('Approved barangays data: ', $approvedBarangays->toArray());
+        \Log::info('=== END ROUTE DEBUG ===');
+        
+        return Inertia::render('apply-event', [
+            'approvedBarangays' => $approvedBarangays
+        ]);
+    })->name('apply-event');
+});
+
 Route::middleware(['auth', 'verified', 'redirect.admin'])->group(function () {
     Route::get('/', [App\Http\Controllers\HomepageController::class, 'index'])->name('home');
     
-    // Admin routes
+    // Admin routes - Community Lead, Super Admin A, Super Admin B
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
-        Route::get('/submissions', [App\Http\Controllers\Admin\SubmissionController::class, 'index'])->name('submissions.index');
-        Route::get('/submissions/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'show'])->name('submissions.show');
-        Route::post('/submissions/{id}/approve', [App\Http\Controllers\Admin\SubmissionController::class, 'approve'])->name('submissions.approve');
-        Route::post('/submissions/{id}/reject', [App\Http\Controllers\Admin\SubmissionController::class, 'reject'])->name('submissions.reject');
-        Route::post('/submissions/{id}/review', [App\Http\Controllers\Admin\SubmissionController::class, 'markUnderReview'])->name('submissions.review');
+        // Submission viewing - Community Lead, Super Admin A, Super Admin B
+        Route::middleware('role:submissions.read')->group(function () {
+            Route::get('/submissions', [App\Http\Controllers\Admin\SubmissionController::class, 'index'])->name('submissions.index');
+            Route::get('/submissions/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'show'])->name('submissions.show');
+        });
         
-        // Account Management routes
-        Route::get('/account-management', [App\Http\Controllers\Admin\AccountManagementController::class, 'index'])->name('account-management');
-        Route::post('/account-management', [App\Http\Controllers\Admin\AccountManagementController::class, 'store'])->name('account-management.store');
-        Route::put('/account-management/{user}', [App\Http\Controllers\Admin\AccountManagementController::class, 'update'])->name('account-management.update');
-        Route::put('/account-management/{user}/password', [App\Http\Controllers\Admin\AccountManagementController::class, 'updatePassword'])->name('account-management.password');
-        Route::patch('/account-management/{user}/toggle-status', [App\Http\Controllers\Admin\AccountManagementController::class, 'toggleStatus'])->name('account-management.toggle-status');
-        Route::delete('/account-management/{user}', [App\Http\Controllers\Admin\AccountManagementController::class, 'destroy'])->name('account-management.destroy');
+        // Pre-approval - Community Lead only
+        Route::middleware('role:submissions.pre_approve')->group(function () {
+            Route::post('/submissions/{id}/pre-approve', [App\Http\Controllers\Admin\SubmissionController::class, 'preApprove'])->name('submissions.pre-approve');
+        });
+        
+        // Final approval - Super Admin A only
+        Route::middleware('role:submissions.final_approve')->group(function () {
+            Route::post('/submissions/{id}/approve', [App\Http\Controllers\Admin\SubmissionController::class, 'approve'])->name('submissions.approve');
+            Route::post('/submissions/{id}/reject', [App\Http\Controllers\Admin\SubmissionController::class, 'reject'])->name('submissions.reject');
+            Route::post('/submissions/{id}/review', [App\Http\Controllers\Admin\SubmissionController::class, 'markUnderReview'])->name('submissions.review');
+        });
+        
+        // Account Management routes - Super Admin A & B only
+        Route::middleware('role:settings.read')->group(function () {
+            Route::get('/account-management', [App\Http\Controllers\Admin\AccountManagementController::class, 'index'])->name('account-management');
+            Route::post('/account-management', [App\Http\Controllers\Admin\AccountManagementController::class, 'store'])->name('account-management.store');
+            Route::put('/account-management/{user}', [App\Http\Controllers\Admin\AccountManagementController::class, 'update'])->name('account-management.update');
+            Route::put('/account-management/{user}/password', [App\Http\Controllers\Admin\AccountManagementController::class, 'updatePassword'])->name('account-management.password');
+            Route::patch('/account-management/{user}/toggle-status', [App\Http\Controllers\Admin\AccountManagementController::class, 'toggleStatus'])->name('account-management.toggle-status');
+            Route::delete('/account-management/{user}', [App\Http\Controllers\Admin\AccountManagementController::class, 'destroy'])->name('account-management.destroy');
+        });
         
         // Role Management routes
         Route::get('/roles', [App\Http\Controllers\Admin\RoleManagementController::class, 'index'])->name('roles');
@@ -55,14 +90,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('ch-transaction/chtransaction');
     })->name('CHTransaction');
 
-    Route::get('/MyBarangay', function () {
+    // Portal access - Community Lead, Super Admin A, Super Admin B
+    Route::middleware(['auth', 'verified', 'role:submissions.read'])->group(function () {
+        Route::get('/MyBarangay', function () {
         // Fetch barangay submissions with related data
         $submissions = \App\Models\BarangaySubmission::with(['region', 'province', 'municipality', 'barangay', 'approvedBy', 'reviewedBy'])
             ->orderBy('created_at', 'desc')
             ->get();
         
-        // Fetch events with related data
-        $events = \App\Models\Event::with([
+        // Fetch events with related data based on user role
+        $user = auth()->user();
+        $userRole = $user->role->slug ?? '';
+        
+        $eventsQuery = \App\Models\Event::with([
             'barangaySubmission',
             'barangaySubmission.region', 
             'barangaySubmission.province', 
@@ -71,9 +111,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'appliedBy', 
             'approvedBy', 
             'reviewedBy'
-        ])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        ]);
+        
+        // Filter events based on role
+        if ($userRole === 'community-lead') {
+            // Community Lead sees PENDING events (from Area Admins) AND their own PRE_APPROVED events
+            $eventsQuery->where(function($query) use ($user) {
+                $query->where('status', 'PENDING')
+                      ->where('applied_by', '!=', $user->id)
+                      ->orWhere(function($subQuery) use ($user) {
+                          $subQuery->where('status', 'PRE_APPROVED')
+                                   ->where('applied_by', $user->id);
+                      });
+            });
+        } elseif ($userRole === 'super-admin-a') {
+            // Super Admin A sees PRE_APPROVED events (from Community Lead or pre-approved Area Admin events)
+            $eventsQuery->where('status', 'PRE_APPROVED');
+        } elseif ($userRole === 'super-admin-b') {
+            // Super Admin B sees all events
+            // No additional filtering needed
+        }
+        
+        $events = $eventsQuery->orderBy('created_at', 'desc')->get();
         
         // Get statistics for barangay submissions
         $submissionStats = [
@@ -86,14 +145,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'this_week' => \App\Models\BarangaySubmission::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
         ];
         
-        // Get statistics for events
+        // Get statistics for events based on user role (same filtering as events query)
+        $eventStatsQuery = \App\Models\Event::query();
+        
+        // Apply same filtering as events query for statistics
+        if ($userRole === 'community-lead') {
+            $eventStatsQuery->where(function($query) use ($user) {
+                $query->where('status', 'PENDING')
+                      ->where('applied_by', '!=', $user->id)
+                      ->orWhere(function($subQuery) use ($user) {
+                          $subQuery->where('status', 'PRE_APPROVED')
+                                   ->where('applied_by', $user->id);
+                      });
+            });
+        } elseif ($userRole === 'super-admin-a') {
+            $eventStatsQuery->where('status', 'PRE_APPROVED');
+        } elseif ($userRole === 'super-admin-b') {
+            // Super Admin B sees all events - no filtering needed
+        }
+        
         $eventStats = [
-            'total' => \App\Models\Event::count(),
-            'pending' => \App\Models\Event::pending()->count(),
+            'total' => $eventStatsQuery->count(),
+            'pending' => $userRole === 'community-lead' ? 
+                \App\Models\Event::where('status', 'PENDING')->where('applied_by', '!=', $user->id)->count() :
+                \App\Models\Event::pending()->count(),
+            'pre_approved' => $userRole === 'community-lead' ? 
+                \App\Models\Event::where('status', 'PRE_APPROVED')->where('applied_by', $user->id)->count() :
+                \App\Models\Event::preApproved()->count(),
             'approved' => \App\Models\Event::approved()->count(),
             'rejected' => \App\Models\Event::rejected()->count(),
             'completed' => \App\Models\Event::completed()->count(),
             'cancelled' => \App\Models\Event::cancelled()->count(),
+            'cleared' => \App\Models\Event::cleared()->count(),
             'this_month' => \App\Models\Event::whereMonth('created_at', now()->month)->count(),
             'this_week' => \App\Models\Event::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
         ];
@@ -109,22 +192,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'user' => $user
         ]);
     })->name('CHPortal');
-
-    // Additional transaction pages
-    Route::get('/apply-event', function () {
-        // Get approved barangays that belong to the current user (community admin)
-        $user = auth()->user();
-        
-        // For now, we'll get all approved barangays
-        // In a real system, you'd link barangays to specific community admins
-        $approvedBarangays = \App\Models\BarangaySubmission::where('status', 'APPROVED')
-            ->with(['region', 'province', 'municipality', 'barangay'])
-            ->get();
-        
-        return Inertia::render('apply-event', [
-            'approvedBarangays' => $approvedBarangays
-        ]);
-    })->name('apply-event');
+    });
 
     Route::get('/my-barangays', function () {
         return Inertia::render('my-barangays');
@@ -325,6 +393,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'event_name' => 'required|string|max:255',
                 'event_description' => 'required|string|max:1000',
                 'event_date' => 'required|date|after_or_equal:today',
+                'campaign' => 'required|string|max:255',
                 'event_location' => 'required|string|max:255',
                 'expected_participants' => 'required|integer|min:1|max:10000',
                 'event_type' => 'nullable|string|max:100',
@@ -343,6 +412,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'proposal_file_path.required' => 'Please upload a proposal file.'
             ]);
             
+            // Determine initial status based on user role
+            $user = auth()->user();
+            $initialStatus = 'PENDING'; // Default for Area Admin
+            
+            if ($user->role && $user->role->slug === 'community-lead') {
+                $initialStatus = 'PRE_APPROVED'; // Community Lead applications go directly to pre-approved
+            } elseif ($user->role && $user->role->slug === 'super-admin-a') {
+                $initialStatus = 'PRE_APPROVED'; // Super Admin A applications go directly to pre-approved
+            }
+            
             // Create event application
             $event = \App\Models\Event::create([
                 'barangay_submission_id' => $request->barangay_submission_id,
@@ -350,6 +429,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'event_name' => $request->event_name,
                 'event_description' => $request->event_description,
                 'event_date' => $request->event_date,
+                'campaign' => $request->campaign,
                 'event_location' => $request->event_location,
                 'expected_participants' => $request->expected_participants,
                 'event_type' => $request->event_type,
@@ -359,7 +439,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'requirements' => $request->requirements,
                 'proposal_file_path' => $request->proposal_file_path,
                 'proposal_file_name' => $request->proposal_file_name,
-                'status' => 'PENDING'
+                'status' => $initialStatus
             ]);
             
             return response()->json([
@@ -424,6 +504,36 @@ Route::middleware(['auth'])->group(function () {
         ]);
     });
     
+    // Event pre-approval route (Community Lead only)
+    Route::post('/api/admin/events/{id}/pre-approve', function ($id) {
+        $request = request();
+        
+        try {
+            $event = \App\Models\Event::findOrFail($id);
+            
+            $request->validate([
+                'admin_notes' => 'nullable|string|max:1000'
+            ]);
+            
+            $event->preApprove(auth()->user(), $request->admin_notes);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Event pre-approved successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Event pre-approval failed', [
+                'event_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to pre-approve event'
+            ], 500);
+        }
+    });
+    
     // Approve event
     Route::post('/api/admin/events/{id}/approve', function ($id) {
         $request = request();
@@ -433,7 +543,7 @@ Route::middleware(['auth'])->group(function () {
             'admin_notes' => 'nullable|string|max:1000'
         ]);
         
-        $event->approve(auth()->user(), $request->admin_notes);
+        $event->finalApprove(auth()->user(), $request->admin_notes);
         
         return response()->json([
             'success' => true,

@@ -15,6 +15,7 @@ class Event extends Model
         'event_name',
         'event_description',
         'event_date',
+        'campaign',
         'event_start_time',
         'event_end_time',
         'event_location',
@@ -61,7 +62,7 @@ class Event extends Model
 
     public function barangaySubmission(): BelongsTo
     {
-        return $this->belongsTo(BarangaySubmission::class);
+        return $this->belongsTo(BarangaySubmission::class, 'barangay_submission_id');
     }
 
     public function appliedBy(): BelongsTo
@@ -84,6 +85,11 @@ class Event extends Model
         return $this->status === 'PENDING';
     }
 
+    public function isPreApproved(): bool
+    {
+        return $this->status === 'PRE_APPROVED';
+    }
+
     public function isApproved(): bool
     {
         return $this->status === 'APPROVED';
@@ -102,6 +108,31 @@ class Event extends Model
     public function isCancelled(): bool
     {
         return $this->status === 'CANCELLED';
+    }
+
+    public function isCleared(): bool
+    {
+        return $this->status === 'CLEARED';
+    }
+
+    public function preApprove(User $user, string $notes = null): void
+    {
+        $this->update([
+            'status' => 'PRE_APPROVED',
+            'reviewed_by' => $user->id,
+            'reviewed_at' => now(),
+            'admin_notes' => $notes
+        ]);
+    }
+
+    public function finalApprove(User $user, string $notes = null): void
+    {
+        $this->update([
+            'status' => 'APPROVED',
+            'approved_by' => $user->id,
+            'approved_at' => now(),
+            'admin_notes' => $notes
+        ]);
     }
 
     public function approve(User $user, string $notes = null): void
@@ -155,6 +186,11 @@ class Event extends Model
         return $query->where('status', 'PENDING');
     }
 
+    public function scopePreApproved($query)
+    {
+        return $query->where('status', 'PRE_APPROVED');
+    }
+
     public function scopeApproved($query)
     {
         return $query->where('status', 'APPROVED');
@@ -173,6 +209,11 @@ class Event extends Model
     public function scopeCancelled($query)
     {
         return $query->where('status', 'CANCELLED');
+    }
+
+    public function scopeCleared($query)
+    {
+        return $query->where('status', 'CLEARED');
     }
 
     public function scopeSuccessful($query)

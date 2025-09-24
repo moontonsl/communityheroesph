@@ -21,6 +21,14 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
     const { auth } = usePage<SharedData>().props;
     const user = auth.user;
     
+    // Debug logging
+    console.log('=== APPLY EVENT DEBUG ===');
+    console.log('approvedBarangays:', approvedBarangays);
+    console.log('approvedBarangays type:', typeof approvedBarangays);
+    console.log('approvedBarangays length:', approvedBarangays?.length);
+    console.log('user:', user);
+    console.log('=== END DEBUG ===');
+    
     const [formData, setFormData] = useState({
         barangaySubmissionId: '',
         eventName: '',

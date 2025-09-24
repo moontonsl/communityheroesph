@@ -12,6 +12,7 @@ interface EventData {
     event_name: string;
     event_description: string;
     event_date: string;
+    campaign: string;
     event_start_time: string;
     event_end_time: string;
     event_location: string;
@@ -23,7 +24,7 @@ interface EventData {
     requirements: string;
     proposal_file_path: string;
     proposal_file_name: string;
-    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED';
+    status: 'PENDING' | 'PRE_APPROVED' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED' | 'CLEARED';
     rejection_reason?: string;
     admin_notes?: string;
     approved_by?: number;
@@ -102,6 +103,68 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
     const openDeleteModal = () => setIsDeleteModalOpen(true);
     const closeDeleteModal = () => setIsDeleteModalOpen(false);
 
+    const handleFinalApprove = async () => {
+        try {
+            const response = await fetch(`/api/admin/events/${eventData.id}/approve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    admin_notes: 'Event approved for final approval by Super Admin A'
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Event approved successfully!');
+                onSuccess?.();
+                onClose();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Approval error:', error);
+            alert('Error approving event. Please try again.');
+        }
+    };
+
+    const handleReject = async () => {
+        const reason = prompt('Please provide a reason for rejection:');
+        if (!reason) return;
+
+        try {
+            const response = await fetch(`/api/admin/events/${eventData.id}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    rejection_reason: reason,
+                    admin_notes: 'Event rejected by Super Admin A'
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Event rejected successfully!');
+                onSuccess?.();
+                onClose();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Rejection error:', error);
+            alert('Error rejecting event. Please try again.');
+        }
+    };
+
     const handleOverlayClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {
             onClose();
@@ -109,11 +172,6 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
     };
 
     if (!eventData) return null;
-
-    console.log('Event Data:', eventData);
-    console.log('Barangay Submission (camelCase):', eventData.barangaySubmission);
-    console.log('Barangay Submission (snake_case):', (eventData as any).barangay_submission);
-    console.log('Barangay Name:', eventData.barangaySubmission?.barangay_name);
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -135,6 +193,8 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
         switch (status) {
             case 'APPROVED':
                 return 'text-green-400 bg-green-400/20';
+            case 'PRE_APPROVED':
+                return 'text-blue-400 bg-blue-400/20';
             case 'PENDING':
                 return 'text-yellow-400 bg-yellow-400/20';
             case 'REJECTED':
@@ -143,6 +203,8 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
                 return 'text-blue-400 bg-blue-400/20';
             case 'CANCELLED':
                 return 'text-gray-400 bg-gray-400/20';
+            case 'CLEARED':
+                return 'text-gray-400 bg-gray-400/20';
             default:
                 return 'text-gray-400 bg-gray-400/20';
         }
@@ -150,38 +212,28 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
 
     return (
         <>
-            {/* Modern Modal Overlay */}
+            {/* Modal Overlay */}
             <div 
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
+                className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
                 onClick={handleOverlayClick}
             >
-                {/* Modern Modal Card */}
-                <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 max-w-4xl w-full max-h-[85vh] overflow-hidden animate-slide-up relative">
-                    {/* Background decoration */}
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-2xl"></div>
-                    <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-pink-500/10 to-blue-500/10 rounded-full blur-xl"></div>
-                    
-                    {/* Modern Modal Header */}
-                    <div className="flex justify-between items-center p-6 border-b border-white/20 relative z-10">
-                        <div className="flex items-center space-x-3">
-                            <div className="relative group">
-                                <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md group-hover:scale-105 transition-transform duration-300">
-                                    EVENT
-                                </div>
-                                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <div className="w-0.5 h-6 bg-gradient-to-b from-purple-400 to-pink-400 rounded-full"></div>
+                {/* Modal Card */}
+                <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+                    {/* Header */}
+                    <div className="bg-gray-700 px-6 py-4 border-b border-gray-600">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-4">
+                                <button className="bg-teal-500 text-white px-4 py-2 rounded-lg text-sm font-bold">
+                                    {eventData.status}
+                                </button>
                                 <div>
                                     <h2 className="text-white text-xl font-bold">Event Information</h2>
-                                    <p className="text-gray-400 text-xs mt-0.5">Event ID: {eventData.event_id}</p>
+                                    <p className="text-gray-300 text-sm">Event ID: {eventData.event_id}</p>
                                 </div>
                             </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
                             <button 
                                 onClick={onClose}
-                                className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-all duration-300 hover:scale-110"
+                                className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-600 transition-colors"
                             >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -190,233 +242,229 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
                         </div>
                     </div>
 
-                    {/* Modern Modal Content */}
-                    <div className="p-6 overflow-y-auto max-h-[65vh] relative z-10">
-                        {/* Modern Event Status */}
+                    {/* Content */}
+                    <div className="p-6 overflow-y-auto max-h-[75vh]">
+                        {/* General Information */}
                         <div className="mb-6">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                    <div className="w-0.5 h-5 bg-gradient-to-b from-blue-400 to-purple-400 rounded-full"></div>
-                                    <h3 className="text-white text-lg font-bold">Event Status</h3>
+                            <div className="flex items-center space-x-2 mb-4">
+                                <h3 className="text-white text-lg font-bold">INFORMATION</h3>
+                                <div className="flex-1 h-px bg-purple-500"></div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <p className="text-gray-300 text-sm">10-digit PSGC</p>
+                                    <p className="text-white font-bold">{eventData.barangaySubmission?.barangay?.psgc_code || 'N/A'}</p>
                                 </div>
-                                <div className="relative group">
-                                    <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-md group-hover:scale-105 transition-transform duration-300 ${getStatusColor(eventData.status)}`}>
-                                        {eventData.status}
-                                    </span>
-                                    <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
+                                <div>
+                                    <p className="text-gray-300 text-sm">Date Filed</p>
+                                    <p className="text-white font-bold">{formatDate(eventData.created_at)}</p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Modern Event Details Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            {/* Left Column */}
-                            <div className="space-y-4">
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-2 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Event Name</label>
-                                    <p className="text-white px-2 text-lg font-bold mt-1 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{eventData.event_name}</p>
-                                </div>
+                        {/* Two Column Layout */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Left Column - Applicant Details */}
+                            <div className="bg-gray-700 rounded-xl p-6">
+                                <h4 className="text-white text-lg font-bold mb-4">Applicant</h4>
                                 
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Event Type</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">{eventData.event_type}</p>
-                                </div>
-
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Event Date</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">{formatDate(eventData.event_date)}</p>
-                                </div>
-
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Time</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">
-                                        {formatTime(eventData.event_start_time)} - {formatTime(eventData.event_end_time)}
-                                    </p>
-                                </div>
-
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Location</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">{eventData.event_location}</p>
-                                </div>
-
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Expected Participants</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">{eventData.expected_participants}</p>
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-gray-300 text-sm">Applicant</p>
+                                        <p className="text-white font-bold">{eventData.appliedBy?.name || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-300 text-sm">Role</p>
+                                        <p className="text-white font-bold">{eventData.appliedBy?.role || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-300 text-sm">Area</p>
+                                        <p className="text-white font-bold">{eventData.barangaySubmission?.region_name || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-300 text-sm">Contact No</p>
+                                        <p className="text-white font-bold">{eventData.contact_number}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-300 text-sm">Contact Email</p>
+                                        <p className="text-white font-bold">{eventData.contact_email}</p>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Right Column */}
-                            <div className="space-y-4">
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Barangay</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">
-                                        {eventData.barangaySubmission?.barangay_name || 
-                                         (eventData as any).barangay_submission?.barangay_name ||
-                                         eventData.barangaySubmission?.barangay?.name || 
-                                         (eventData as any).barangay_submission?.barangay?.name ||
-                                         'N/A'}
-                                    </p>
+                            {/* Right Column - Location and Event Details */}
+                            <div className="space-y-6">
+                                {/* Location Information */}
+                                <div>
+                                    <h4 className="text-white text-lg font-bold mb-4">INFORMATION</h4>
+                                    
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Barangay</p>
+                                            <p className="text-white font-bold">
+                                                {eventData.barangaySubmission?.barangay_name || 
+                                                 (eventData as any).barangay_submission?.barangay_name || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Municipality/City</p>
+                                            <p className="text-white font-bold">
+                                                {eventData.barangaySubmission?.municipality_name || 
+                                                 (eventData as any).barangay_submission?.municipality_name || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Province</p>
+                                            <p className="text-white font-bold">
+                                                {eventData.barangaySubmission?.province_name || 
+                                                 (eventData as any).barangay_submission?.province_name || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Region</p>
+                                            <p className="text-white font-bold">
+                                                {eventData.barangaySubmission?.region_name || 
+                                                 (eventData as any).barangay_submission?.region_name || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Population</p>
+                                            <p className="text-white font-bold">
+                                                {eventData.barangaySubmission?.barangay?.population?.toLocaleString() || 'N/A'}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Municipality</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">
-                                        {eventData.barangaySubmission?.municipality_name || 
-                                         (eventData as any).barangay_submission?.municipality_name ||
-                                         eventData.barangaySubmission?.municipality?.name || 
-                                         (eventData as any).barangay_submission?.municipality?.name ||
-                                         'N/A'}
-                                    </p>
-                                </div>
-
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Province</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">
-                                        {eventData.barangaySubmission?.province_name || 
-                                         (eventData as any).barangay_submission?.province_name ||
-                                         eventData.barangaySubmission?.province?.name || 
-                                         (eventData as any).barangay_submission?.province?.name ||
-                                         'N/A'}
-                                    </p>
-                                </div>
-
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Contact Person</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">{eventData.contact_person}</p>
-                                </div>
-
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Contact Number</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">{eventData.contact_number}</p>
-                                </div>
-
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Contact Email</label>
-                                    <p className="text-white px-2 text-base font-semibold mt-1">{eventData.contact_email}</p>
+                                {/* Event Information */}
+                                <div>
+                                    <h4 className="text-white text-lg font-bold mb-4">EVENT INFORMATION</h4>
+                                    
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Name of Event</p>
+                                            <p className="text-white font-bold">{eventData.event_name}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Execution Date</p>
+                                            <p className="text-white font-bold">{formatDate(eventData.event_date)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Campaign</p>
+                                            <p className="text-white font-bold">{eventData.campaign || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Prop. # of Teams</p>
+                                            <p className="text-white font-bold">{eventData.expected_participants}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Event Type</p>
+                                            <p className="text-white font-bold">{eventData.event_type}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-300 text-sm">Location</p>
+                                            <p className="text-white font-bold">{eventData.event_location}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Modern Event Description */}
-                        <div className="mb-6">
-                            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                <div className="flex items-center space-x-2 mb-3">
-                                    <div className="w-0.5 h-5 bg-gradient-to-b from-blue-400 to-purple-400 rounded-full"></div>
-                                    <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Event Description</label>
+                        {/* Event Description */}
+                        {eventData.event_description && (
+                            <div className="mt-6">
+                                <h4 className="text-white text-lg font-bold mb-4">Event Description</h4>
+                                <div className="bg-gray-700 rounded-xl p-4">
+                                    <p className="text-white leading-relaxed">{eventData.event_description}</p>
                                 </div>
-                                <p className="text-white px-2 leading-relaxed text-sm">{eventData.event_description}</p>
                             </div>
-                        </div>
+                        )}
 
-                        {/* Modern Requirements */}
+                        {/* Requirements */}
                         {eventData.requirements && (
-                            <div className="mb-6">
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <div className="flex items-center space-x-2 mb-3">
-                                        <div className="w-0.5 h-5 bg-gradient-to-b from-green-400 to-emerald-400 rounded-full"></div>
-                                        <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Requirements</label>
-                                    </div>
-                                    <p className="text-white leading-relaxed text-sm">{eventData.requirements}</p>
+                            <div className="mt-6">
+                                <h4 className="text-white text-lg font-bold mb-4">Requirements</h4>
+                                <div className="bg-gray-700 rounded-xl p-4">
+                                    <p className="text-white leading-relaxed">{eventData.requirements}</p>
                                 </div>
                             </div>
                         )}
 
-                        {/* Modern Admin Notes */}
+                        {/* Admin Notes */}
                         {eventData.admin_notes && (
-                            <div className="mb-6">
-                                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <div className="flex items-center space-x-2 mb-3">
-                                        <div className="w-0.5 h-5 bg-gradient-to-b from-yellow-400 to-orange-400 rounded-full"></div>
-                                        <label className="text-gray-400 text-xs uppercase tracking-wider font-medium">Admin Notes</label>
-                                    </div>
-                                    <p className="text-white leading-relaxed text-sm">{eventData.admin_notes}</p>
+                            <div className="mt-6">
+                                <h4 className="text-white text-lg font-bold mb-4">Admin Notes</h4>
+                                <div className="bg-gray-700 rounded-xl p-4">
+                                    <p className="text-white leading-relaxed">{eventData.admin_notes}</p>
                                 </div>
                             </div>
                         )}
 
-                        {/* Modern Rejection Reason */}
+                        {/* Rejection Reason */}
                         {eventData.rejection_reason && (
-                            <div className="mb-6">
-                                <div className="bg-red-500/10 backdrop-blur-sm rounded-xl p-4 border border-red-500/20 hover:bg-red-500/20 transition-all duration-300">
-                                    <div className="flex items-center space-x-2 mb-3">
-                                        <div className="w-0.5 h-5 bg-gradient-to-b from-red-400 to-pink-400 rounded-full"></div>
-                                        <label className="text-red-400 text-xs uppercase tracking-wider font-medium">Rejection Reason</label>
-                                    </div>
-                                    <p className="text-red-300 leading-relaxed text-sm">{eventData.rejection_reason}</p>
+                            <div className="mt-6">
+                                <h4 className="text-white text-lg font-bold mb-4">Rejection Reason</h4>
+                                <div className="bg-red-900/30 border border-red-500/30 rounded-xl p-4">
+                                    <p className="text-red-300 leading-relaxed">{eventData.rejection_reason}</p>
                                 </div>
                             </div>
                         )}
 
-                        {/* Modern Action Buttons */}
-                        <div className="flex flex-wrap gap-3 mt-6">
+                        {/* Action Buttons */}
+                        <div className="flex justify-end space-x-4 mt-8">
                             {/* View Proposal Button */}
                             {eventData.proposal_file_path && (
                                 <button
                                     onClick={() => window.open(`/storage/${eventData.proposal_file_path}`, '_blank')}
-                                    className="group relative inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-white/20 
-                                        rounded-lg shadow-lg hover:shadow-green-500/25 transition-all duration-300 
-                                        hover:bg-gradient-to-r hover:from-green-500/30 hover:to-emerald-500/30 hover:scale-105 
-                                        focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+                                    className="bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
                                 >
-                                    <span className="relative z-10 flex items-center space-x-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z" />
-                                        </svg>
-                                        <span>View Proposal</span>
-                                    </span>
+                                    VIEW PROPOSAL
                                 </button>
                             )}
 
-                            {/* Modern Action buttons based on status */}
+                            {/* Super Admin A Actions for PRE_APPROVED events */}
+                            {eventData.status === 'PRE_APPROVED' && (
+                                <>
+                                    <button
+                                        onClick={handleFinalApprove}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
+                                    >
+                                        APPROVE
+                                    </button>
+                                    <button
+                                        onClick={handleReject}
+                                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
+                                    >
+                                        REJECT
+                                    </button>
+                                </>
+                            )}
+
+                            {/* Community Lead Actions for PENDING events */}
                             {eventData.status === 'PENDING' && (
                                 <>
                                     <button
                                         onClick={openApprovalModal}
-                                        className="group relative inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-green-500 to-emerald-500 
-                                            rounded-lg shadow-lg hover:shadow-green-500/25 transition-all duration-300 
-                                            hover:scale-105
-                                            focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
                                     >
-                                        <span className="relative z-10 flex items-center space-x-2">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            <span>Approve</span>
-                                        </span>
+                                        APPROVE
                                     </button>
                                     <button
                                         onClick={openReturnModal}
-                                        className="group relative inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-yellow-500 to-orange-500 
-                                            rounded-lg shadow-lg hover:shadow-yellow-500/25 transition-all duration-300 
-                                            hover:scale-105
-                                            focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+                                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
                                     >
-                                        <span className="relative z-10 flex items-center space-x-2">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                            </svg>
-                                            <span>Return</span>
-                                        </span>
+                                        REJECT
                                     </button>
                                 </>
                             )}
-                        </div>
 
-                        {/* Modern Close Button */}
-                        <div className="flex justify-center mt-6">
+                            {/* Delete Button */}
                             <button
-                                onClick={onClose}
-                                className="group relative inline-flex items-center justify-center px-6 py-2 text-xs font-bold text-white bg-gradient-to-r from-gray-500/20 to-slate-500/20 backdrop-blur-sm border border-white/20 
-                                    rounded-lg shadow-lg hover:shadow-gray-500/25 transition-all duration-300 
-                                    hover:bg-gradient-to-r hover:from-gray-500/30 hover:to-slate-500/30 hover:scale-105 
-                                    focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+                                onClick={openDeleteModal}
+                                className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
                             >
-                                <span className="relative z-10 flex items-center space-x-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                    <span>Close</span>
-                                </span>
+                                DELETE ENTRY
                             </button>
                         </div>
                     </div>
