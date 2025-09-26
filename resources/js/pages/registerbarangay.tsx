@@ -1,7 +1,8 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Header from '@/pages/partials/header';
+import { SharedData } from '@/types';
 
 interface LocationOption {
     id: number;
@@ -32,6 +33,9 @@ interface RegisterBarangayProps {
 }
 
 export default function RegisterBarangay({ preFillData }: RegisterBarangayProps = {}) {
+    const { auth } = usePage<SharedData>().props;
+    const user = auth.user;
+    
     const [formData, setFormData] = useState({
         regionId: preFillData?.regionId || '',
         regionName: preFillData?.regionName || '',
@@ -47,6 +51,7 @@ export default function RegisterBarangay({ preFillData }: RegisterBarangayProps 
         position: preFillData?.position || '',
         dateSigned: preFillData?.dateSigned || '',
         stage: preFillData?.stage || 'RENEWAL', // Change to RENEWAL for re-apply
+        assignedUserId: user.id.toString(), // Automatically tag the logged-in user
         moaFile: null as File | null
     });
 
@@ -408,6 +413,7 @@ export default function RegisterBarangay({ preFillData }: RegisterBarangayProps 
                 position: formData.position,
                 date_signed: formData.dateSigned,
                 stage: formData.stage,
+                assigned_user_id: formData.assignedUserId,
                 moa_file_path: uploadResult.file_path,
                 moa_file_name: uploadResult.file_name
             };
@@ -436,6 +442,7 @@ export default function RegisterBarangay({ preFillData }: RegisterBarangayProps 
                     position: '',
                     dateSigned: '',
                     stage: 'NEW',
+                    assignedUserId: user.id.toString(),
                     moaFile: null
                 });
                 setRegionSearch('');

@@ -13,7 +13,7 @@ interface BarangayData {
     province_name: string;
     region_name: string;
     second_party_name: string;
-    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW';
+    status: 'PENDING' | 'PRE_APPROVED' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW' | 'RENEW';
     tier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
     successful_events_count: number;
     tier_updated_at?: string;
@@ -30,6 +30,8 @@ interface BarangayData {
     approved_at?: string;
     reviewed_by?: number;
     reviewed_at?: string;
+    moa_expiry_date?: string;
+    is_moa_expired?: boolean;
     created_at: string;
     updated_at: string;
     region?: {
@@ -73,6 +75,7 @@ interface EventData {
     event_name: string;
     event_description: string;
     event_date: string;
+    campaign: string;
     event_start_time: string;
     event_end_time: string;
     event_location: string;
@@ -149,6 +152,7 @@ interface Stats {
     approved: number;
     rejected: number;
     under_review: number;
+    renew?: number;
     completed?: number;
     cancelled?: number;
     cleared?: number;
@@ -185,7 +189,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
     const [filterText, setFilterText] = useState('');
     
     // Tab state for barangay submissions
-    const [activeTab, setActiveTab] = useState<'pending' | 'renewals' | 'approved' | 'masterlist'>('pending');
+    const [activeTab, setActiveTab] = useState<'pending' | 'pre-approved' | 'renewals' | 'approved' | 'masterlist'>('pending');
     
     // Tab state for events
     const [activeEventTab, setActiveEventTab] = useState<'new' | 'pre-approved' | 'approved' | 'cleared' | 'all'>('new');
@@ -291,10 +295,10 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                     item.event_type.toLowerCase().includes(searchTerm) ||
                     item.contact_person.toLowerCase().includes(searchTerm) ||
                     item.status.toLowerCase().includes(searchTerm) ||
-                    item.barangaySubmission?.barangay_name.toLowerCase().includes(searchTerm) ||
-                    item.barangaySubmission?.municipality_name.toLowerCase().includes(searchTerm) ||
-                    item.barangaySubmission?.province_name.toLowerCase().includes(searchTerm) ||
-                    item.barangaySubmission?.region_name.toLowerCase().includes(searchTerm)
+                    item.barangay_submission?.barangay_name.toLowerCase().includes(searchTerm) ||
+                    item.barangay_submission?.municipality_name.toLowerCase().includes(searchTerm) ||
+                    item.barangay_submission?.province_name.toLowerCase().includes(searchTerm) ||
+                    item.barangay_submission?.region_name.toLowerCase().includes(searchTerm)
                 );
             }
             
@@ -305,8 +309,10 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
             // Filter by tab
             if (activeTab === 'pending') {
                 data = data.filter(item => item.status === 'PENDING');
+            } else if (activeTab === 'pre-approved') {
+                data = data.filter(item => item.status === 'PRE_APPROVED');
             } else if (activeTab === 'renewals') {
-                data = data.filter(item => item.status === 'UNDER_REVIEW');
+                data = data.filter(item => item.status === 'UNDER_REVIEW' || item.status === 'RENEW');
             } else if (activeTab === 'approved') {
                 data = data.filter(item => item.status === 'APPROVED');
             }
@@ -585,6 +591,23 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                 )}
                             </button>
                             <button 
+                                onClick={() => setActiveTab('pre-approved')}
+                                className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    activeTab === 'pre-approved'
+                                        ? 'text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-2xl hover:shadow-blue-500/25 hover:from-blue-400 hover:to-blue-500 focus:ring-blue-500/50'
+                                        : 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:shadow-white/10 hover:bg-white/20 focus:ring-white/20'
+                                }`}>
+                                <span className="relative z-10 flex items-center space-x-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Pre-Approved ({submissionStats.pre_approved || 0})</span>
+                                </span>
+                                {activeTab === 'pre-approved' && (
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                )}
+                            </button>
+                            <button 
                                 onClick={() => setActiveTab('renewals')}
                                 className={`group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold transition-all duration-300 rounded-md shadow-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 ${
                                     activeTab === 'renewals'
@@ -595,7 +618,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    <span>Renewals ({submissionStats.under_review})</span>
+                                    <span>Renewals ({(submissionStats.under_review || 0) + (submissionStats.renew || 0)})</span>
                                 </span>
                                 {activeTab === 'renewals' && (
                                     <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-purple-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -727,6 +750,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     {viewMode === 'events' && activeEventTab === 'cleared' && ' - Cleared Events'}
                                     {viewMode === 'events' && activeEventTab === 'all' && ' - All Events'}
                                     {viewMode === 'barangays' && activeTab === 'pending' && ' - Pending Approval'}
+                                    {viewMode === 'barangays' && activeTab === 'pre-approved' && ' - Pre-Approved'}
                                     {viewMode === 'barangays' && activeTab === 'renewals' && ' - Renewals'}
                                     {viewMode === 'barangays' && activeTab === 'approved' && ' - Approved Barangays'}
                                     {viewMode === 'barangays' && activeTab === 'masterlist' && ' - Masterlist'}
@@ -841,24 +865,26 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                             <div className="hidden lg:block">
                                 {/* Modern Table Headers */}
                                 {viewMode === 'events' ? (
-                                    <div className="grid grid-cols-8 gap-4 mb-4 pb-4 border-b border-white/20">
+                                    <div className="grid grid-cols-9 gap-4 mb-4 pb-4 border-b border-white/20">
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Event Name</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Location</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Date</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Barangay</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Contact Person</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Status</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Pre-Approved By</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Participants</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Details</div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-8 gap-4 mb-4 pb-4 border-b border-white/20">
+                                    <div className="grid grid-cols-9 gap-4 mb-4 pb-4 border-b border-white/20">
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Barangay</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">City/Municipality</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Province</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Region</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Applicant</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Status</div>
+                                        <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Pre-Approved By</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Tier</div>
                                         <div className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Details</div>
                                     </div>
@@ -866,7 +892,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
 
                                 {/* Modern Table Rows */}
                                 {currentData.map((item, index) => (
-                                    <div key={startIndex + index} className="grid grid-cols-8 gap-4 py-4 border-b border-white/10 hover:bg-white/5 rounded-xl transition-all duration-300 group">
+                                    <div key={startIndex + index} className="grid grid-cols-9 gap-4 py-4 border-b border-white/10 hover:bg-white/5 rounded-xl transition-all duration-300 group">
                                         {viewMode === 'events' ? (
                                             <>
                                                 <div className="text-white text-sm font-medium">{(item as EventData).event_name}</div>
@@ -883,6 +909,12 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                                     (item as EventData).status === 'CLEARED' ? 'text-gray-400' : 'text-gray-400'
                                                 }`}>
                                                     {(item as EventData).status}
+                                                </div>
+                                                <div className="text-white text-sm">
+                                                    {(item as EventData).status === 'PRE_APPROVED' ? 
+                                                        (item as EventData).reviewedBy?.name || 'Community Lead' : 
+                                                        '-'
+                                                    }
                                                 </div>
                                                 <div className="text-white text-sm">{(item as EventData).expected_participants}</div>
                                                 <div>
@@ -912,10 +944,18 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                                 <div className="text-white text-sm">{(item as BarangayData).second_party_name}</div>
                                                 <div className={`text-sm font-semibold ${
                                                     (item as BarangayData).status === 'APPROVED' ? 'text-green-400' :
+                                                    (item as BarangayData).status === 'PRE_APPROVED' ? 'text-blue-400' :
                                                     (item as BarangayData).status === 'PENDING' ? 'text-yellow-400' :
-                                                    (item as BarangayData).status === 'REJECTED' ? 'text-red-400' : 'text-blue-400'
+                                                    (item as BarangayData).status === 'REJECTED' ? 'text-red-400' :
+                                                    (item as BarangayData).status === 'RENEW' ? 'text-orange-400' : 'text-blue-400'
                                                 }`}>
                                                     {(item as BarangayData).status}
+                                                </div>
+                                                <div className="text-white text-sm">
+                                                    {(item as BarangayData).status === 'PRE_APPROVED' ? 
+                                                        (item as BarangayData).reviewedBy?.name || 'Community Lead' : 
+                                                        '-'
+                                                    }
                                                 </div>
                                                 <div className="flex items-center">
                                                     {(item as BarangayData).status === 'APPROVED' ? (
@@ -977,9 +1017,14 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                                 <div className="text-gray-300 text-sm mb-2">
                                                     <span className="text-gray-400">Barangay:</span> {(item as EventData).barangay_submission?.barangay_name || 'N/A'}
                                                 </div>
-                                                <div className="text-gray-300 text-sm mb-4">
+                                                <div className="text-gray-300 text-sm mb-2">
                                                     <span className="text-gray-400">Contact:</span> {(item as EventData).contact_person}
                                                 </div>
+                                                {(item as EventData).status === 'PRE_APPROVED' && (
+                                                    <div className="text-gray-300 text-sm mb-2">
+                                                        <span className="text-gray-400">Pre-Approved By:</span> {(item as EventData).reviewedBy?.name || 'Community Lead'}
+                                                    </div>
+                                                )}
                                                 <div className="text-gray-300 text-sm mb-4">
                                                     <span className="text-gray-400">Expected Participants:</span> {(item as EventData).expected_participants}
                                                 </div>
@@ -1009,8 +1054,10 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                                     </div>
                                                     <div className={`text-sm font-bold px-3 py-1 rounded-full ${
                                                         (item as BarangayData).status === 'APPROVED' ? 'text-green-400 bg-green-400/20' :
+                                                        (item as BarangayData).status === 'PRE_APPROVED' ? 'text-blue-400 bg-blue-400/20' :
                                                         (item as BarangayData).status === 'PENDING' ? 'text-yellow-400 bg-yellow-400/20' :
-                                                        (item as BarangayData).status === 'REJECTED' ? 'text-red-400 bg-red-400/20' : 'text-blue-400 bg-blue-400/20'
+                                                        (item as BarangayData).status === 'REJECTED' ? 'text-red-400 bg-red-400/20' :
+                                                        (item as BarangayData).status === 'RENEW' ? 'text-orange-400 bg-orange-400/20' : 'text-blue-400 bg-blue-400/20'
                                                     }`}>
                                                         {(item as BarangayData).status}
                                                     </div>
@@ -1018,6 +1065,11 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                                 <div className="text-gray-300 text-sm mb-4">
                                                     <span className="text-gray-400">Applicant:</span> {(item as BarangayData).second_party_name}
                                                 </div>
+                                                {(item as BarangayData).status === 'PRE_APPROVED' && (
+                                                    <div className="text-gray-300 text-sm mb-2">
+                                                        <span className="text-gray-400">Pre-Approved By:</span> {(item as BarangayData).reviewedBy?.name || 'Community Lead'}
+                                                    </div>
+                                                )}
                                                 {(item as BarangayData).status === 'APPROVED' && (
                                                     <div className="mb-4">
                                                         <span className="text-gray-400 text-sm">Tier:</span>
@@ -1146,6 +1198,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                     isOpen={isModalOpen}
                     onClose={closeModal}
                     barangayData={selectedBarangay}
+                    user={user}
                 />
             )}
             
@@ -1156,6 +1209,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                     onClose={closeModal}
                     eventData={selectedEvent}
                     onSuccess={handleSuccess}
+                    user={user}
                 />
             )}
         </>

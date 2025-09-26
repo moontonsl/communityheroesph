@@ -82,14 +82,27 @@ interface EventData {
     };
 }
 
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: {
+        id: number;
+        name: string;
+        slug: string;
+        description: string;
+    };
+}
+
 interface ViewEventModalProps {
     isOpen: boolean;
     onClose: () => void;
     eventData: EventData | null;
     onSuccess?: () => void;
+    user?: User;
 }
 
-export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }: ViewEventModalProps) {
+export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess, user }: ViewEventModalProps) {
     const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -105,7 +118,7 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
 
     const handleFinalApprove = async () => {
         try {
-            const response = await fetch(`/api/admin/events/${eventData.id}/approve`, {
+            const response = await fetch(`/api/admin/events/${eventData?.id}/approve`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -137,7 +150,7 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
         if (!reason) return;
 
         try {
-            const response = await fetch(`/api/admin/events/${eventData.id}/reject`, {
+            const response = await fetch(`/api/admin/events/${eventData?.id}/reject`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -276,7 +289,7 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
                                     </div>
                                     <div>
                                         <p className="text-gray-300 text-sm">Role</p>
-                                        <p className="text-white font-bold">{eventData.appliedBy?.role || 'N/A'}</p>
+                                        <p className="text-white font-bold">{eventData.appliedBy?.name || 'N/A'}</p>
                                     </div>
                                     <div>
                                         <p className="text-gray-300 text-sm">Area</p>
@@ -411,62 +424,75 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
                             </div>
                         )}
 
-                        {/* Action Buttons */}
-                        <div className="flex justify-end space-x-4 mt-8">
-                            {/* View Proposal Button */}
-                            {eventData.proposal_file_path && (
-                                <button
-                                    onClick={() => window.open(`/storage/${eventData.proposal_file_path}`, '_blank')}
-                                    className="bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
-                                >
-                                    VIEW PROPOSAL
-                                </button>
-                            )}
+                        {/* Action Buttons - Hide for Area Admin */}
+                        {user?.role?.slug !== 'area-admin' && (
+                            <div className="flex justify-end space-x-4 mt-8">
+                                {/* View Proposal Button */}
+                                {eventData.proposal_file_path && (
+                                    <button
+                                        onClick={() => window.open(`/storage/${eventData.proposal_file_path}`, '_blank')}
+                                        className="bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
+                                    >
+                                        VIEW PROPOSAL
+                                    </button>
+                                )}
 
-                            {/* Super Admin A Actions for PRE_APPROVED events */}
-                            {eventData.status === 'PRE_APPROVED' && (
-                                <>
+                                {/* Community Lead Pre-Approval Button for PENDING events */}
+                                {user?.role?.slug === 'community-lead' && eventData.status === 'PENDING' && (
+                                    <button
+                                        onClick={openApprovalModal}
+                                        className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
+                                    >
+                                        PRE-APPROVE
+                                    </button>
+                                )}
+                                
+                                {/* Super Admin Final Approval Button for PRE_APPROVED events */}
+                                {(user?.role?.slug === 'super-admin-a' || user?.role?.slug === 'super-admin') && eventData.status === 'PRE_APPROVED' && (
                                     <button
                                         onClick={handleFinalApprove}
                                         className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
                                     >
-                                        APPROVE
+                                        APPROVE MOA
                                     </button>
-                                    <button
-                                        onClick={handleReject}
-                                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
-                                    >
-                                        REJECT
-                                    </button>
-                                </>
-                            )}
+                                )}
+                                
+                                <button
+                                    onClick={openReturnModal}
+                                    className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
+                                >
+                                    REJECT
+                                </button>
 
-                            {/* Community Lead Actions for PENDING events */}
-                            {eventData.status === 'PENDING' && (
-                                <>
-                                    <button
-                                        onClick={openApprovalModal}
-                                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
-                                    >
-                                        APPROVE
-                                    </button>
-                                    <button
-                                        onClick={openReturnModal}
-                                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
-                                    >
-                                        REJECT
-                                    </button>
-                                </>
-                            )}
-
-                            {/* Delete Button */}
-                            <button
-                                onClick={openDeleteModal}
-                                className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
-                            >
-                                DELETE ENTRY
-                            </button>
-                        </div>
+                                {/* Delete Button */}
+                                <button
+                                    onClick={openDeleteModal}
+                                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
+                                >
+                                    DELETE ENTRY
+                                </button>
+                            </div>
+                        )}
+                        
+                        {/* Area Admin Message */}
+                        {user?.role?.slug === 'area-admin' && (
+                            <div className="mt-8">
+                                <div className="text-center">
+                                    <div className="bg-blue-500/20 border border-blue-500/30 rounded-xl p-6">
+                                        <div className="flex items-center justify-center mb-4">
+                                            <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-white text-lg font-semibold mb-2">View Only Mode</h3>
+                                        <p className="text-blue-300 text-sm">
+                                            As an Area Admin, you can only view your assigned event applications. 
+                                            You cannot approve, reject, or delete your own event applications.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -478,6 +504,7 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess }
                 barangayName={eventData.barangaySubmission?.barangay_name || (eventData as any).barangay_submission?.barangay_name || 'Unknown'}
                 submissionId={eventData.id}
                 type="event"
+                userRole={user?.role?.slug}
                 onSuccess={onSuccess}
             />
 

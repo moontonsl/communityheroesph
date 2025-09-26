@@ -93,15 +93,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Portal access - Community Lead, Super Admin A, Super Admin B
     Route::middleware(['auth', 'verified', 'role:submissions.read'])->group(function () {
         Route::get('/MyBarangay', function () {
-        // Fetch barangay submissions with related data
-        $submissions = \App\Models\BarangaySubmission::with(['region', 'province', 'municipality', 'barangay', 'approvedBy', 'reviewedBy'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-        
-        // Fetch events with related data based on user role
-        $user = auth()->user();
+        // Get authenticated user with role information
+        $user = auth()->user()->load('role');
         $userRole = $user->role->slug ?? '';
         
+        // Fetch barangay submissions with related data based on user role
+        $submissionsQuery = \App\Models\BarangaySubmission::with(['region', 'province', 'municipality', 'barangay', 'approvedBy', 'reviewedBy', 'assignedUser']);
+        
+        // Filter submissions based on role
+        if ($userRole === 'area-admin') {
+            // Area Admin only sees their own assigned submissions
+            $submissionsQuery->where('assigned_user_id', $user->id);
+        } elseif ($userRole === 'community-lead') {
+            // Community Lead sees PENDING submissions from Area Admins AND their own PRE_APPROVED submissions
+            $submissionsQuery->where(function($query) use ($user) {
+                $query->where('status', 'PENDING')
+                      ->where('assigned_user_id', '!=', $user->id)
+                      ->orWhere(function($subQuery) use ($user) {
+                          $subQuery->where('status', 'PRE_APPROVED')
+                                   ->where('reviewed_by', $user->id);
+                      });
+            });
+        } elseif ($userRole === 'super-admin-a' || $userRole === 'super-admin') {
+            // Super Admin A and Super Admin only see PRE_APPROVED submissions for final approval
+            $submissionsQuery->where('status', 'PRE_APPROVED');
+        } elseif ($userRole === 'super-admin-b') {
+            // Super Admin B sees all submissions
+            // No additional filtering needed
+        }
+        
+        $submissions = $submissionsQuery->orderBy('created_at', 'desc')->get();
+        
+        // Fetch events with related data based on user role
         $eventsQuery = \App\Models\Event::with([
             'barangaySubmission',
             'barangaySubmission.region', 
@@ -109,23 +132,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'barangaySubmission.municipality', 
             'barangaySubmission.barangay', 
             'appliedBy', 
+            'assignedUser',
             'approvedBy', 
             'reviewedBy'
         ]);
         
         // Filter events based on role
-        if ($userRole === 'community-lead') {
-            // Community Lead sees PENDING events (from Area Admins) AND their own PRE_APPROVED events
+        if ($userRole === 'area-admin') {
+            // Area Admin only sees events assigned to them
+            $eventsQuery->where('assigned_user_id', $user->id);
+        } elseif ($userRole === 'community-lead') {
+            // Community Lead sees PENDING events from Area Admins AND their own PRE_APPROVED events
             $eventsQuery->where(function($query) use ($user) {
                 $query->where('status', 'PENDING')
-                      ->where('applied_by', '!=', $user->id)
+                      ->where('assigned_user_id', '!=', $user->id)
                       ->orWhere(function($subQuery) use ($user) {
                           $subQuery->where('status', 'PRE_APPROVED')
-                                   ->where('applied_by', $user->id);
+                                   ->where('reviewed_by', $user->id);
                       });
             });
-        } elseif ($userRole === 'super-admin-a') {
-            // Super Admin A sees PRE_APPROVED events (from Community Lead or pre-approved Area Admin events)
+        } elseif ($userRole === 'super-admin-a' || $userRole === 'super-admin') {
+            // Super Admin A and Super Admin only see PRE_APPROVED events for final approval
             $eventsQuery->where('status', 'PRE_APPROVED');
         } elseif ($userRole === 'super-admin-b') {
             // Super Admin B sees all events
@@ -134,31 +161,54 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         $events = $eventsQuery->orderBy('created_at', 'desc')->get();
         
-        // Get statistics for barangay submissions
+        // Get statistics for barangay submissions based on user role
+        $submissionStatsQuery = \App\Models\BarangaySubmission::query();
+        
+        if ($userRole === 'area-admin') {
+            $submissionStatsQuery->where('assigned_user_id', $user->id);
+        } elseif ($userRole === 'community-lead') {
+            $submissionStatsQuery->where(function($query) use ($user) {
+                $query->where('status', 'PENDING')
+                      ->where('assigned_user_id', '!=', $user->id)
+                      ->orWhere(function($subQuery) use ($user) {
+                          $subQuery->where('status', 'PRE_APPROVED')
+                                   ->where('reviewed_by', $user->id);
+                      });
+            });
+        } elseif ($userRole === 'super-admin-a' || $userRole === 'super-admin') {
+            $submissionStatsQuery->where('status', 'PRE_APPROVED');
+        } elseif ($userRole === 'super-admin-b') {
+            // Super Admin B sees all submissions - no filtering needed
+        }
+        
         $submissionStats = [
-            'total' => \App\Models\BarangaySubmission::count(),
-            'pending' => \App\Models\BarangaySubmission::pending()->count(),
-            'approved' => \App\Models\BarangaySubmission::approved()->count(),
-            'rejected' => \App\Models\BarangaySubmission::rejected()->count(),
-            'under_review' => \App\Models\BarangaySubmission::underReview()->count(),
-            'this_month' => \App\Models\BarangaySubmission::whereMonth('created_at', now()->month)->count(),
-            'this_week' => \App\Models\BarangaySubmission::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
+            'total' => $submissionStatsQuery->count(),
+            'pending' => $submissionStatsQuery->clone()->pending()->count(),
+            'pre_approved' => $submissionStatsQuery->clone()->preApproved()->count(),
+            'approved' => $submissionStatsQuery->clone()->approved()->count(),
+            'rejected' => $submissionStatsQuery->clone()->rejected()->count(),
+            'under_review' => $submissionStatsQuery->clone()->underReview()->count(),
+            'renew' => $submissionStatsQuery->clone()->renew()->count(),
+            'this_month' => $submissionStatsQuery->clone()->whereMonth('created_at', now()->month)->count(),
+            'this_week' => $submissionStatsQuery->clone()->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
         ];
         
         // Get statistics for events based on user role (same filtering as events query)
         $eventStatsQuery = \App\Models\Event::query();
         
         // Apply same filtering as events query for statistics
-        if ($userRole === 'community-lead') {
+        if ($userRole === 'area-admin') {
+            $eventStatsQuery->where('assigned_user_id', $user->id);
+        } elseif ($userRole === 'community-lead') {
             $eventStatsQuery->where(function($query) use ($user) {
                 $query->where('status', 'PENDING')
-                      ->where('applied_by', '!=', $user->id)
+                      ->where('assigned_user_id', '!=', $user->id)
                       ->orWhere(function($subQuery) use ($user) {
                           $subQuery->where('status', 'PRE_APPROVED')
-                                   ->where('applied_by', $user->id);
+                                   ->where('reviewed_by', $user->id);
                       });
             });
-        } elseif ($userRole === 'super-admin-a') {
+        } elseif ($userRole === 'super-admin-a' || $userRole === 'super-admin') {
             $eventStatsQuery->where('status', 'PRE_APPROVED');
         } elseif ($userRole === 'super-admin-b') {
             // Super Admin B sees all events - no filtering needed
@@ -168,21 +218,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'total' => $eventStatsQuery->count(),
             'pending' => $userRole === 'community-lead' ? 
                 \App\Models\Event::where('status', 'PENDING')->where('applied_by', '!=', $user->id)->count() :
-                \App\Models\Event::pending()->count(),
+                $eventStatsQuery->clone()->pending()->count(),
             'pre_approved' => $userRole === 'community-lead' ? 
                 \App\Models\Event::where('status', 'PRE_APPROVED')->where('applied_by', $user->id)->count() :
-                \App\Models\Event::preApproved()->count(),
-            'approved' => \App\Models\Event::approved()->count(),
-            'rejected' => \App\Models\Event::rejected()->count(),
-            'completed' => \App\Models\Event::completed()->count(),
-            'cancelled' => \App\Models\Event::cancelled()->count(),
-            'cleared' => \App\Models\Event::cleared()->count(),
-            'this_month' => \App\Models\Event::whereMonth('created_at', now()->month)->count(),
-            'this_week' => \App\Models\Event::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
+                $eventStatsQuery->clone()->preApproved()->count(),
+            'approved' => $eventStatsQuery->clone()->approved()->count(),
+            'rejected' => $eventStatsQuery->clone()->rejected()->count(),
+            'completed' => $eventStatsQuery->clone()->completed()->count(),
+            'cancelled' => $eventStatsQuery->clone()->cancelled()->count(),
+            'cleared' => $eventStatsQuery->clone()->cleared()->count(),
+            'this_month' => $eventStatsQuery->clone()->whereMonth('created_at', now()->month)->count(),
+            'this_week' => $eventStatsQuery->clone()->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
         ];
-        
-        // Get authenticated user with role information
-        $user = auth()->user()->load('role');
         
         return Inertia::render('portal/chportal', [
             'submissions' => $submissions,
@@ -203,6 +250,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/regions', function () {
         return \App\Models\Region::select('id', 'name', 'code')->orderBy('name')->get();
+    });
+
+    Route::get('/api/users', function () {
+        return \App\Models\User::with('role')->get(['id', 'name', 'role_id'])->map(function($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'role' => $user->role ? $user->role->name : 'No Role'
+            ];
+        });
     });
 
     Route::get('/api/provinces/{regionId}', function ($regionId) {
@@ -317,6 +374,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
     });
 
+    // Upload MOA file for Community Lead pre-approval
+    Route::post('/api/upload-moa', function () {
+        $request = request();
+        
+        try {
+            // Validate file
+            $request->validate([
+                'moa_file' => 'required|file|mimes:pdf|max:10240' // 10MB max
+            ]);
+            
+            // Store file
+            $file = $request->file('moa_file');
+            $fileName = 'moa_' . time() . '_' . uniqid() . '.pdf';
+            $filePath = $file->storeAs('moa_files', $fileName, 'public');
+            
+            return response()->json([
+                'success' => true,
+                'file_path' => $filePath,
+                'file_name' => $fileName
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('MOA upload error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error uploading MOA file: ' . $e->getMessage()
+            ], 500);
+        }
+    });
+
     Route::post('/api/register-barangay', function () {
         $request = request();
         
@@ -332,6 +418,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'position' => 'required|string|max:255',
             'date_signed' => 'required|date',
             'stage' => 'required|in:NEW,RENEWAL',
+            'assigned_user_id' => 'required|exists:users,id',
             'moa_file_path' => 'required|string',
             'moa_file_name' => 'required|string'
         ]);
@@ -353,6 +440,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'position' => $request->position,
                 'date_signed' => $request->date_signed,
                 'stage' => $request->stage,
+                'assigned_user_id' => $request->assigned_user_id,
                 'moa_file_path' => $request->moa_file_path,
                 'moa_file_name' => $request->moa_file_name,
                 'submitted_from_ip' => $request->ip(),
@@ -426,6 +514,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $event = \App\Models\Event::create([
                 'barangay_submission_id' => $request->barangay_submission_id,
                 'applied_by' => auth()->id(),
+                'assigned_user_id' => auth()->id(), // Automatically assign the logged-in user
                 'event_name' => $request->event_name,
                 'event_description' => $request->event_description,
                 'event_date' => $request->event_date,
@@ -490,17 +579,84 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/api/admin/submissions/{id}/approve', function ($id) {
         $request = request();
         $submission = \App\Models\BarangaySubmission::findOrFail($id);
+        $user = auth()->user();
+        $userRole = $user->role->slug;
+        
+        $request->validate([
+            'admin_notes' => 'nullable|string|max:1000',
+            'moa_file_path' => 'nullable|string',
+            'moa_file_name' => 'nullable|string'
+        ]);
+        
+        // Update submission with MOA file info if provided (Community Lead pre-approval)
+        $updateData = ['admin_notes' => $request->admin_notes];
+        if ($request->moa_file_path && $request->moa_file_name) {
+            $updateData['moa_file_path'] = $request->moa_file_path;
+            $updateData['moa_file_name'] = $request->moa_file_name;
+        }
+        
+        // Determine approval type based on user role and current status
+        if ($userRole === 'community-lead' && $submission->status === 'PENDING') {
+            // Community Lead pre-approval
+            $submission->preApprove($user, $request->admin_notes);
+        } elseif (($userRole === 'super-admin-a' || $userRole === 'super-admin') && $submission->status === 'PRE_APPROVED') {
+            // Super Admin final approval - sets 1-year expiry
+            $submission->approve($user, $request->admin_notes);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid approval action for current user role and submission status'
+            ], 400);
+        }
+        
+        // Update MOA file info if provided
+        if ($request->moa_file_path && $request->moa_file_name) {
+            $submission->update([
+                'moa_file_path' => $request->moa_file_path,
+                'moa_file_name' => $request->moa_file_name
+            ]);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Submission approved successfully',
+            'submission' => $submission->fresh(['approvedBy', 'reviewedBy'])
+        ]);
+    });
+    
+    // Renew MOA route (Super Admin A only)
+    Route::post('/api/admin/submissions/{id}/renew', function ($id) {
+        $request = request();
+        $submission = \App\Models\BarangaySubmission::findOrFail($id);
+        $user = auth()->user();
+        $userRole = $user->role->slug;
+        
+        // Only Super Admin A can renew MOAs
+        if ($userRole !== 'super-admin-a' && $userRole !== 'super-admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only Super Admin can renew MOAs'
+            ], 403);
+        }
+        
+        // Only RENEW status can be renewed
+        if ($submission->status !== 'RENEW') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only expired MOAs can be renewed'
+            ], 400);
+        }
         
         $request->validate([
             'admin_notes' => 'nullable|string|max:1000'
         ]);
         
-        $submission->approve(auth()->user(), $request->admin_notes);
+        $submission->renewMoa($user, $request->admin_notes);
         
         return response()->json([
             'success' => true,
-            'message' => 'Submission approved successfully',
-            'submission' => $submission->fresh(['approvedBy'])
+            'message' => 'MOA renewed successfully for 1 year',
+            'submission' => $submission->fresh(['approvedBy', 'reviewedBy'])
         ]);
     });
     
@@ -512,10 +668,20 @@ Route::middleware(['auth'])->group(function () {
             $event = \App\Models\Event::findOrFail($id);
             
             $request->validate([
-                'admin_notes' => 'nullable|string|max:1000'
+                'admin_notes' => 'nullable|string|max:1000',
+                'moa_file_path' => 'nullable|string',
+                'moa_file_name' => 'nullable|string'
             ]);
             
             $event->preApprove(auth()->user(), $request->admin_notes);
+            
+            // Update event with MOA file info if provided (Community Lead pre-approval)
+            if ($request->moa_file_path && $request->moa_file_name) {
+                $event->update([
+                    'moa_file_path' => $request->moa_file_path,
+                    'moa_file_name' => $request->moa_file_name
+                ]);
+            }
             
             return response()->json([
                 'success' => true,

@@ -24,6 +24,7 @@ class BarangaySubmission extends Model
         'position',
         'date_signed',
         'stage',
+        'assigned_user_id',
         'moa_file_path',
         'moa_file_name',
         'status',
@@ -34,6 +35,8 @@ class BarangaySubmission extends Model
         'admin_notes',
         'approved_by',
         'approved_at',
+        'moa_expiry_date',
+        'is_moa_expired',
         'reviewed_by',
         'reviewed_at',
         'submission_id',
@@ -46,6 +49,8 @@ class BarangaySubmission extends Model
         'approved_at' => 'datetime',
         'reviewed_at' => 'datetime',
         'tier_updated_at' => 'datetime',
+        'moa_expiry_date' => 'date',
+        'is_moa_expired' => 'boolean',
         'population' => 'integer',
         'successful_events_count' => 'integer'
     ];
@@ -91,6 +96,11 @@ class BarangaySubmission extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
@@ -111,9 +121,24 @@ class BarangaySubmission extends Model
         return $this->status === 'REJECTED';
     }
 
+    public function isPreApproved(): bool
+    {
+        return $this->status === 'PRE_APPROVED';
+    }
+
     public function isUnderReview(): bool
     {
         return $this->status === 'UNDER_REVIEW';
+    }
+
+    public function isRenew(): bool
+    {
+        return $this->status === 'RENEW';
+    }
+
+    public function isMoaExpired(): bool
+    {
+        return $this->is_moa_expired || ($this->moa_expiry_date && $this->moa_expiry_date->isPast());
     }
 
     public function approve(User $user, string $notes = null): void
@@ -125,6 +150,18 @@ class BarangaySubmission extends Model
             'tier_updated_at' => now(),
             'approved_by' => $user->id,
             'approved_at' => now(),
+            'moa_expiry_date' => now()->addYear(), // Set 1-year expiry
+            'is_moa_expired' => false,
+            'admin_notes' => $notes
+        ]);
+    }
+
+    public function preApprove(User $user, string $notes = null): void
+    {
+        $this->update([
+            'status' => 'PRE_APPROVED',
+            'reviewed_by' => $user->id,
+            'reviewed_at' => now(),
             'admin_notes' => $notes
         ]);
     }
@@ -150,6 +187,26 @@ class BarangaySubmission extends Model
         ]);
     }
 
+    public function markMoaExpired(): void
+    {
+        $this->update([
+            'status' => 'RENEW',
+            'is_moa_expired' => true
+        ]);
+    }
+
+    public function renewMoa(User $user, string $notes = null): void
+    {
+        $this->update([
+            'status' => 'APPROVED',
+            'moa_expiry_date' => now()->addYear(), // Set new 1-year expiry
+            'is_moa_expired' => false,
+            'approved_by' => $user->id,
+            'approved_at' => now(),
+            'admin_notes' => $notes
+        ]);
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', 'PENDING');
@@ -160,6 +217,11 @@ class BarangaySubmission extends Model
         return $query->where('status', 'APPROVED');
     }
 
+    public function scopePreApproved($query)
+    {
+        return $query->where('status', 'PRE_APPROVED');
+    }
+
     public function scopeRejected($query)
     {
         return $query->where('status', 'REJECTED');
@@ -168,6 +230,20 @@ class BarangaySubmission extends Model
     public function scopeUnderReview($query)
     {
         return $query->where('status', 'UNDER_REVIEW');
+    }
+
+    public function scopeRenew($query)
+    {
+        return $query->where('status', 'RENEW');
+    }
+
+    public function scopeExpired($query)
+    {
+        return $query->where('is_moa_expired', true)
+                    ->orWhere(function($q) {
+                        $q->whereNotNull('moa_expiry_date')
+                          ->where('moa_expiry_date', '<', now());
+                    });
     }
 
     public function isBronze(): bool

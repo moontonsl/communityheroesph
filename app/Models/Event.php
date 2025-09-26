@@ -12,6 +12,7 @@ class Event extends Model
         'event_id',
         'barangay_submission_id',
         'applied_by',
+        'assigned_user_id',
         'event_name',
         'event_description',
         'event_date',
@@ -27,6 +28,8 @@ class Event extends Model
         'requirements',
         'proposal_file_path',
         'proposal_file_name',
+        'moa_file_path',
+        'moa_file_name',
         'status',
         'rejection_reason',
         'admin_notes',
@@ -68,6 +71,11 @@ class Event extends Model
     public function appliedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'applied_by');
+    }
+
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
     public function approvedBy(): BelongsTo
