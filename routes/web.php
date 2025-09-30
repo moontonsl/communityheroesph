@@ -246,6 +246,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('my-barangays');
 });
 
+// Event Reporting Routes - Area Admin and Community Lead only
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::prefix('event-reporting')->name('event-reporting.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\EventReportingController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\Admin\EventReportingController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\Admin\EventReportingController::class, 'store'])->name('store');
+        Route::get('/{id}', [App\Http\Controllers\Admin\EventReportingController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [App\Http\Controllers\Admin\EventReportingController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [App\Http\Controllers\Admin\EventReportingController::class, 'update'])->name('update');
+            Route::post('/{id}/submit', [App\Http\Controllers\Admin\EventReportingController::class, 'submit'])->name('submit');
+            Route::delete('/{id}', [App\Http\Controllers\Admin\EventReportingController::class, 'destroy'])->name('destroy');
+            
+            // Admin actions
+            Route::post('/{id}/pre-approve', [App\Http\Controllers\Admin\EventReportingController::class, 'preApprove'])->name('pre-approve');
+            Route::post('/{id}/review', [App\Http\Controllers\Admin\EventReportingController::class, 'review'])->name('review');
+            Route::post('/{id}/approve', [App\Http\Controllers\Admin\EventReportingController::class, 'approve'])->name('approve');
+            
+            // Super Admin financial and clearance actions
+            Route::put('/{id}/financials', [App\Http\Controllers\Admin\EventReportingController::class, 'updateFinancials'])->name('update-financials');
+            Route::post('/{id}/first-clearance', [App\Http\Controllers\Admin\EventReportingController::class, 'firstClearance'])->name('first-clearance');
+            Route::post('/{id}/final-clearance', [App\Http\Controllers\Admin\EventReportingController::class, 'finalClearance'])->name('final-clearance');
+    });
+});
+
+// Event Report Review Routes - Super Admin only
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::prefix('event-report-review')->name('event-report-review.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\EventReportReviewController::class, 'index'])->name('index');
+        Route::get('/{id}', [App\Http\Controllers\Admin\EventReportReviewController::class, 'show'])->name('show');
+        Route::post('/{id}/review', [App\Http\Controllers\Admin\EventReportReviewController::class, 'review'])->name('review');
+        Route::post('/{id}/approve', [App\Http\Controllers\Admin\EventReportReviewController::class, 'approve'])->name('approve');
+        Route::post('/{id}/first-clearance', [App\Http\Controllers\Admin\EventReportReviewController::class, 'firstClearance'])->name('first-clearance');
+        Route::post('/{id}/final-clearance', [App\Http\Controllers\Admin\EventReportReviewController::class, 'finalClearance'])->name('final-clearance');
+        Route::put('/{id}/financials', [App\Http\Controllers\Admin\EventReportReviewController::class, 'updateFinancials'])->name('update-financials');
+    });
+});
+
 // Location API routes - Protected
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/regions', function () {
@@ -370,6 +407,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return response()->json([
                 'success' => false,
                 'message' => 'Error uploading proposal file: ' . $e->getMessage()
+            ], 500);
+        }
+    });
+
+    Route::post('/api/upload-post-event-file', function () {
+        $request = request();
+        
+        try {
+            // Validate file
+            $request->validate([
+                'post_event_file' => 'required|file|mimes:pdf|max:10240' // 10MB max
+            ]);
+            
+            // Store file
+            $file = $request->file('post_event_file');
+            $fileName = 'post_event_' . time() . '_' . uniqid() . '.pdf';
+            $filePath = $file->storeAs('post_event_files', $fileName, 'public');
+            
+            return response()->json([
+                'success' => true,
+                'file_path' => $filePath,
+                'file_name' => $fileName
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Post event file upload error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error uploading post event file: ' . $e->getMessage()
             ], 500);
         }
     });

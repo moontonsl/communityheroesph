@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { LogOut, User, Menu, X, Home, Building, Calendar, Users, BarChart3, Settings } from 'lucide-react';
+import { LogOut, User, Menu, X, Home, Building, Calendar, Users, BarChart3, Settings, FileText } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { SharedData } from '@/types';
 
@@ -18,6 +18,17 @@ export default function Header() {
         { name: 'Home', href: '/homepage', icon: Home },
         { name: 'My Barangays', href: '/MyBarangay', icon: Users },
     ];
+
+    // Event Report Review link for Super Admin users
+    const eventReportReviewLink = (auth?.user as any)?.role?.slug === 'super-admin' || 
+                                  (auth?.user as any)?.role?.slug === 'super-admin-a' ||
+                                  (auth?.user as any)?.role?.slug === 'super-admin-b' ? 
+        { name: 'Review Reports', href: '/event-report-review', icon: FileText } : null;
+
+    // Event Reporting link for Area Admin and Community Lead ONLY
+    const eventReportingLink = (auth?.user as any)?.role?.slug === 'area-admin' || 
+                               (auth?.user as any)?.role?.slug === 'community-lead' ? 
+        { name: 'Event Reporting', href: '/event-reporting', icon: FileText } : null;
 
     const transactionSubLinks = [
         { name: 'Register Barangay', href: '/registerbarangay', icon: Building },
@@ -92,6 +103,26 @@ export default function Header() {
                                         </Link>
                                     );
                                 })}
+                                
+                                {/* Event Reporting Link */}
+                                {eventReportingLink && (
+                                    <Link
+                                        href={eventReportingLink.href}
+                                        className="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                                    >
+                                        {eventReportingLink.name}
+                                    </Link>
+                                )}
+
+                                {/* Event Report Review Link */}
+                                {eventReportReviewLink && (
+                                    <Link
+                                        href={eventReportReviewLink.href}
+                                        className="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                                    >
+                                        {eventReportReviewLink.name}
+                                    </Link>
+                                )}
                                 
                                 {/* Transaction Dropdown - Hidden for Super Admin B */}
                                 {auth?.user?.role?.slug !== 'super-admin-b' && (
@@ -225,6 +256,28 @@ export default function Header() {
                                                 </Link>
                                             );
                                         })}
+                                        
+                                        {/* Event Reporting Link */}
+                                        {eventReportingLink && (
+                                            <Link
+                                                href={eventReportingLink.href}
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className="px-4 py-3 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                                            >
+                                                <span className="font-medium">{eventReportingLink.name}</span>
+                                            </Link>
+                                        )}
+
+                                        {/* Event Report Review Link */}
+                                        {eventReportReviewLink && (
+                                            <Link
+                                                href={eventReportReviewLink.href}
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className="px-4 py-3 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                                            >
+                                                <span className="font-medium">{eventReportReviewLink.name}</span>
+                                            </Link>
+                                        )}
                                         
                                         {/* Transaction Section */}
                                         <div className="px-4 py-3 text-gray-300 font-medium">
