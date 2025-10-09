@@ -124,6 +124,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         $submissions = $submissionsQuery->orderBy('created_at', 'desc')->get();
         
+        // Get all submissions for master list (unfiltered)
+        $allSubmissions = \App\Models\BarangaySubmission::with(['region', 'province', 'municipality', 'barangay', 'approvedBy', 'reviewedBy', 'assignedUser'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
         // Fetch events with related data based on user role
         $eventsQuery = \App\Models\Event::with([
             'barangaySubmission',
@@ -161,6 +166,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         $events = $eventsQuery->orderBy('created_at', 'desc')->get();
         
+        // Get all events for master list (unfiltered)
+        $allEvents = \App\Models\Event::with([
+            'barangaySubmission',
+            'barangaySubmission.region', 
+            'barangaySubmission.province', 
+            'barangaySubmission.municipality', 
+            'barangaySubmission.barangay', 
+            'appliedBy', 
+            'assignedUser',
+            'approvedBy', 
+            'reviewedBy'
+        ])->orderBy('created_at', 'desc')->get();
+        
         // Get statistics for barangay submissions based on user role
         $submissionStatsQuery = \App\Models\BarangaySubmission::query();
         
@@ -191,6 +209,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'renew' => $submissionStatsQuery->clone()->renew()->count(),
             'this_month' => $submissionStatsQuery->clone()->whereMonth('created_at', now()->month)->count(),
             'this_week' => $submissionStatsQuery->clone()->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
+        ];
+        
+        // Get statistics for all submissions (for master list)
+        $allSubmissionStats = [
+            'total' => \App\Models\BarangaySubmission::count(),
+            'pending' => \App\Models\BarangaySubmission::pending()->count(),
+            'pre_approved' => \App\Models\BarangaySubmission::preApproved()->count(),
+            'approved' => \App\Models\BarangaySubmission::approved()->count(),
+            'rejected' => \App\Models\BarangaySubmission::rejected()->count(),
+            'under_review' => \App\Models\BarangaySubmission::underReview()->count(),
+            'renew' => \App\Models\BarangaySubmission::renew()->count(),
+            'this_month' => \App\Models\BarangaySubmission::whereMonth('created_at', now()->month)->count(),
+            'this_week' => \App\Models\BarangaySubmission::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
         ];
         
         // Get statistics for events based on user role (same filtering as events query)
@@ -231,11 +262,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'this_week' => $eventStatsQuery->clone()->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
         ];
         
+        // Get statistics for all events (for master list)
+        $allEventStats = [
+            'total' => \App\Models\Event::count(),
+            'pending' => \App\Models\Event::pending()->count(),
+            'pre_approved' => \App\Models\Event::preApproved()->count(),
+            'approved' => \App\Models\Event::approved()->count(),
+            'rejected' => \App\Models\Event::rejected()->count(),
+            'completed' => \App\Models\Event::completed()->count(),
+            'cancelled' => \App\Models\Event::cancelled()->count(),
+            'cleared' => \App\Models\Event::cleared()->count(),
+            'this_month' => \App\Models\Event::whereMonth('created_at', now()->month)->count(),
+            'this_week' => \App\Models\Event::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
+        ];
+        
         return Inertia::render('portal/chportal', [
             'submissions' => $submissions,
             'events' => $events,
+            'allSubmissions' => $allSubmissions,
+            'allEvents' => $allEvents,
             'submissionStats' => $submissionStats,
             'eventStats' => $eventStats,
+            'allSubmissionStats' => $allSubmissionStats,
+            'allEventStats' => $allEventStats,
             'user' => $user
         ]);
     })->name('CHPortal');

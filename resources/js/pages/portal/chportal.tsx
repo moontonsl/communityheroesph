@@ -179,12 +179,16 @@ interface User {
 interface CHPortalProps {
     submissions: BarangayData[];
     events: EventData[];
+    allSubmissions: BarangayData[];
+    allEvents: EventData[];
     submissionStats: Stats;
     eventStats: Stats;
+    allSubmissionStats: Stats;
+    allEventStats: Stats;
     user: User;
 }
 
-export default function CHPortal({ submissions, events, submissionStats, eventStats, user }: CHPortalProps) {
+export default function CHPortal({ submissions, events, allSubmissions, allEvents, submissionStats, eventStats, allSubmissionStats, allEventStats, user }: CHPortalProps) {
     // State for filter input
     const [filterText, setFilterText] = useState('');
     
@@ -268,10 +272,24 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
     const barangayData: BarangayData[] = submissions;
     const eventData: EventData[] = events;
 
+    // Get current stats based on active tab and view mode
+    const getCurrentStats = () => {
+        if (viewMode === 'events') {
+            // For events view, always use all event statistics for consistency
+            return allEventStats;
+        } else {
+            // For barangays view, always use all barangay statistics for consistency
+            return allSubmissionStats;
+        }
+    };
+
+    const currentStats = getCurrentStats();
+
     // Filtered data based on tab and search input
     const filteredData = useMemo(() => {
         if (viewMode === 'events') {
-            let data = eventData;
+            // Use allEvents for master list and approved tab, eventData for other role-specific tabs
+            let data = (activeEventTab === 'all' || activeEventTab === 'approved') ? allEvents : eventData;
             
             // Filter events by tab
             if (activeEventTab === 'new') {
@@ -304,7 +322,8 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
             
             return data;
         } else {
-            let data = barangayData;
+            // Use allSubmissions for master list and approved tab, barangayData for other role-specific tabs
+            let data = (activeTab === 'masterlist' || activeTab === 'approved') ? allSubmissions : barangayData;
             
             // Filter by tab
             if (activeTab === 'pending') {
@@ -333,7 +352,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
             
             return data;
         }
-    }, [barangayData, eventData, activeTab, activeEventTab, filterText, viewMode]);
+    }, [barangayData, eventData, allSubmissions, allEvents, activeTab, activeEventTab, filterText, viewMode]);
 
     // Pagination calculations
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -497,8 +516,12 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">Approved</div>
-                            <div className="text-white text-3xl font-bold">{viewMode === 'events' ? eventStats.approved : submissionStats.approved}</div>
+                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">
+                                {viewMode === 'events' ? 'Approved Events' : 'Approved Barangays'}
+                            </div>
+                            <div className="text-white text-3xl font-bold">
+                                {currentStats.approved}
+                            </div>
                         </div>
                         <div className="bg-white/5 backdrop-blur-xl rounded-md p-6 text-center shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
                             <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
@@ -506,8 +529,12 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                 </svg>
                             </div>
-                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">New</div>
-                            <div className="text-white text-3xl font-bold">{viewMode === 'events' ? eventStats.pending : submissionStats.pending}</div>
+                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">
+                                {viewMode === 'events' ? 'New Events' : 'Pending Applications'}
+                            </div>
+                            <div className="text-white text-3xl font-bold">
+                                {currentStats.pending}
+                            </div>
                         </div>
                         <div className="bg-white/5 backdrop-blur-xl rounded-md p-6 text-center shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
                             <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
@@ -515,8 +542,12 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
                             </div>
-                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">{viewMode === 'events' ? 'Completed' : 'Renewal'}</div>
-                            <div className="text-white text-3xl font-bold">{viewMode === 'events' ? eventStats.completed : submissionStats.under_review}</div>
+                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">
+                                {viewMode === 'events' ? 'Completed Events' : 'Renewal Required'}
+                            </div>
+                            <div className="text-white text-3xl font-bold">
+                                {viewMode === 'events' ? currentStats.completed : (currentStats.under_review || 0) + (currentStats.renew || 0)}
+                            </div>
                         </div>
                         <div className="bg-white/5 backdrop-blur-xl rounded-md p-6 text-center shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
                             <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
@@ -524,8 +555,12 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                             </div>
-                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">{viewMode === 'events' ? 'This Month' : 'Event Application'}</div>
-                            <div className="text-white text-3xl font-bold">{viewMode === 'events' ? eventStats.this_month : submissionStats.this_month}</div>
+                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">
+                                {viewMode === 'events' ? 'This Month Events' : 'My Applications'}
+                            </div>
+                            <div className="text-white text-3xl font-bold">
+                                {currentStats.this_month}
+                            </div>
                         </div>
                         <div className="bg-white/5 backdrop-blur-xl rounded-md p-6 text-center shadow-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 group lg:col-span-1 md:col-span-3">
                             <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
@@ -533,8 +568,12 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                                 </svg>
                             </div>
-                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">Total</div>
-                            <div className="text-white text-3xl font-bold">{viewMode === 'events' ? eventStats.total : submissionStats.total}</div>
+                            <div className="text-gray-300 text-sm mb-2 uppercase tracking-wider">
+                                {viewMode === 'events' ? 'Total Events' : 'Total Barangays'}
+                            </div>
+                            <div className="text-white text-3xl font-bold">
+                                {currentStats.total}
+                            </div>
                         </div>
                     </div>
 
@@ -584,7 +623,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span>Pending Approval ({submissionStats.pending})</span>
+                                    <span>Pending Approval ({activeTab === 'masterlist' ? allSubmissionStats.pending : submissionStats.pending})</span>
                                 </span>
                                 {activeTab === 'pending' && (
                                     <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -601,7 +640,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span>Pre-Approved ({submissionStats.pre_approved || 0})</span>
+                                    <span>Pre-Approved ({activeTab === 'masterlist' ? allSubmissionStats.pre_approved || 0 : submissionStats.pre_approved || 0})</span>
                                 </span>
                                 {activeTab === 'pre-approved' && (
                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -618,7 +657,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    <span>Renewals ({(submissionStats.under_review || 0) + (submissionStats.renew || 0)})</span>
+                                    <span>Renewals ({(activeTab === 'masterlist' ? allSubmissionStats.under_review || 0 : submissionStats.under_review || 0) + (activeTab === 'masterlist' ? allSubmissionStats.renew || 0 : submissionStats.renew || 0)})</span>
                                 </span>
                                 {activeTab === 'renewals' && (
                                     <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-purple-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -635,7 +674,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span>Approved Barangays ({submissionStats.approved})</span>
+                                    <span>Approved Barangays ({activeTab === 'masterlist' || activeTab === 'approved' ? allSubmissionStats.approved : submissionStats.approved})</span>
                                 </span>
                                 {activeTab === 'approved' && (
                                     <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -652,7 +691,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                     </svg>
-                                    <span>Masterlist ({submissionStats.total})</span>
+                                    <span>Masterlist ({allSubmissionStats.total})</span>
                                 </span>
                                 {activeTab === 'masterlist' && (
                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -674,7 +713,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                     </svg>
-                                    <span>New Events ({eventStats.pending})</span>
+                                    <span>New Events ({activeEventTab === 'all' ? allEventStats.pending : eventStats.pending})</span>
                                 </span>
                             </button>
                             <button 
@@ -688,7 +727,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span>Pre-Approved Events ({eventStats.pre_approved || 0})</span>
+                                    <span>Pre-Approved Events ({activeEventTab === 'all' ? allEventStats.pre_approved || 0 : eventStats.pre_approved || 0})</span>
                                 </span>
                             </button>
                             <button 
@@ -702,7 +741,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                                     </svg>
-                                    <span>Approved Events ({eventStats.approved})</span>
+                                    <span>Approved Events ({activeEventTab === 'all' || activeEventTab === 'approved' ? allEventStats.approved : eventStats.approved})</span>
                                 </span>
                             </button>
                             <button 
@@ -716,7 +755,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span>Cleared Events ({eventStats.cleared || 0})</span>
+                                    <span>Cleared Events ({activeEventTab === 'all' ? allEventStats.cleared || 0 : eventStats.cleared || 0})</span>
                                 </span>
                             </button>
                             <button 
@@ -730,7 +769,7 @@ export default function CHPortal({ submissions, events, submissionStats, eventSt
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                     </svg>
-                                    <span>All Events ({eventStats.total})</span>
+                                    <span>All Events ({allEventStats.total})</span>
                                 </span>
                             </button>
                         </div>
