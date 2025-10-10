@@ -83,6 +83,18 @@ Route::middleware(['auth', 'verified', 'redirect.admin'])->group(function () {
         Route::put('/roles/{role}', [App\Http\Controllers\Admin\RoleManagementController::class, 'update'])->name('roles.update');
         Route::patch('/roles/{role}/toggle-status', [App\Http\Controllers\Admin\RoleManagementController::class, 'toggleStatus'])->name('roles.toggle-status');
         Route::delete('/roles/{role}', [App\Http\Controllers\Admin\RoleManagementController::class, 'destroy'])->name('roles.destroy');
+        
+        // Airtable Management routes - Super Admin only
+        Route::middleware('role:settings.read')->group(function () {
+            Route::get('/airtable', function () {
+                return Inertia::render('admin/airtable-management');
+            })->name('airtable.management');
+            Route::get('/airtable/status', [App\Http\Controllers\Admin\AirtableController::class, 'getStatus'])->name('airtable.status');
+            Route::post('/airtable/test', [App\Http\Controllers\Admin\AirtableController::class, 'testConnection'])->name('airtable.test');
+            Route::post('/airtable/sync-all', [App\Http\Controllers\Admin\AirtableController::class, 'syncAll'])->name('airtable.sync-all');
+            Route::post('/airtable/sync-submission/{id}', [App\Http\Controllers\Admin\AirtableController::class, 'syncBarangaySubmission'])->name('airtable.sync-submission');
+            Route::post('/airtable/sync-event/{id}', [App\Http\Controllers\Admin\AirtableController::class, 'syncEvent'])->name('airtable.sync-event');
+        });
     });
 });
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -562,10 +574,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'status' => 'PENDING'
             ]);
             
+            // Sync to Airtable if enabled
+            if (config('airtable.sync.enabled', true)) {
+                try {
+                    \App\Jobs\SyncToAirtableJob::dispatch('barangay_submission', $submission->id, 'create');
+                    \Log::info('Airtable sync job dispatched for barangay submission', [
+                        'submission_id' => $submission->submission_id,
+                        'id' => $submission->id
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to dispatch Airtable sync job', [
+                        'submission_id' => $submission->submission_id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Don't fail the main request if Airtable sync fails
+                }
+            }
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Barangay registration submitted successfully for approval',
                 'submission_id' => $submission->submission_id,
+                'airtable_sync' => config('airtable.sync.enabled', true) ? 'queued' : 'disabled',
                 'data' => [
                     'id' => $submission->id,
                     'submission_id' => $submission->submission_id,
@@ -645,10 +675,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'status' => $initialStatus
             ]);
             
+            // Sync to Airtable if enabled
+            if (config('airtable.sync.enabled', true)) {
+                try {
+                    \App\Jobs\SyncToAirtableJob::dispatch('event', $event->id, 'create');
+                    \Log::info('Airtable sync job dispatched for event', [
+                        'event_id' => $event->event_id,
+                        'id' => $event->id
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to dispatch Airtable sync job for event', [
+                        'event_id' => $event->event_id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Don't fail the main request if Airtable sync fails
+                }
+            }
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Event application submitted successfully for approval',
                 'event_id' => $event->event_id,
+                'airtable_sync' => config('airtable.sync.enabled', true) ? 'queued' : 'disabled',
                 'data' => [
                     'id' => $event->id,
                     'event_id' => $event->event_id,
