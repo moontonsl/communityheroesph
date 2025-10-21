@@ -13,6 +13,11 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20.19.0'  # Ensure compatible Node.js version
+
     - name: Deploy to Main Server via SSH
       uses: appleboy/ssh-action@master
       with:
@@ -30,5 +35,13 @@ jobs:
 
           composer install --no-interaction --prefer-dist --optimize-autoloader
           php artisan migrate --force
-          npm install
+          
+          # Verify Node.js and npm versions
+          node -v
+          npm -v
+          
+          # Install dependencies (with legacy-peer-deps to handle conflicts)
+          npm install --legacy-peer-deps
+          
+          # Run the build process
           npm run build
