@@ -265,10 +265,10 @@ export default function EventReportingShow({ report, user }: EventReportingShowP
                             {/* Report Content */}
                             <div className="space-y-8">
                                 
-                                {/* Financial Information - Super Admin Only */}
+                                {/* Post Event Information - Super Admin Only */}
                                 {(user?.role?.slug === 'super-admin-a' || user?.role?.slug === 'super-admin' || user?.role?.slug === 'super-admin-b') && (
                                     <div>
-                                        <h3 className="text-2xl font-bold text-white mb-4">Financial Information</h3>
+                                        <h3 className="text-2xl font-bold text-white mb-4">Post Event Information</h3>
                                         <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
@@ -394,7 +394,8 @@ export default function EventReportingShow({ report, user }: EventReportingShowP
                                 </Link>
                                 
                                 <div className="flex space-x-4">
-                                    {report.status === 'DRAFT' && (
+                                    {/* Edit Report - Only for Area Admin when status is DRAFT and clearances are not completed */}
+                                    {user?.role?.slug === 'area-admin' && report.status === 'DRAFT' && report.first_clearance_status !== 'CLEARED' && report.final_clearance_status !== 'CLEARED' && (
                                         <Link 
                                             href={`/event-reporting/${report.id}/edit`}
                                             className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
@@ -403,10 +404,12 @@ export default function EventReportingShow({ report, user }: EventReportingShowP
                                         </Link>
                                     )}
                                     
-                                    {report.status === 'DRAFT' && (
+                                    {/* Submit Report - Only for Area Admin when status is DRAFT and clearances are not completed */}
+                                    {user?.role?.slug === 'area-admin' && report.status === 'DRAFT' && report.first_clearance_status !== 'CLEARED' && report.final_clearance_status !== 'CLEARED' && (
                                         <button
                                             onClick={() => {
                                                 if (confirm('Are you sure you want to submit this report? Once submitted, it cannot be edited.')) {
+                                                    console.log('Submitting report:', report.id);
                                                     // Submit report
                                                     fetch(`/event-reporting/${report.id}/submit`, {
                                                         method: 'POST',
@@ -414,8 +417,20 @@ export default function EventReportingShow({ report, user }: EventReportingShowP
                                                             'Content-Type': 'application/json',
                                                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                                                         },
-                                                    }).then(() => {
-                                                        window.location.reload();
+                                                    })
+                                                    .then(response => {
+                                                        console.log('Submit response status:', response.status);
+                                                        if (response.ok) {
+                                                            console.log('Report submitted successfully');
+                                                            window.location.reload();
+                                                        } else {
+                                                            console.error('Submit failed:', response.statusText);
+                                                            alert('Failed to submit report. Please try again.');
+                                                        }
+                                                    })
+                                                    .catch(error => {
+                                                        console.error('Submit error:', error);
+                                                        alert('Error submitting report. Please try again.');
                                                     });
                                                 }
                                             }}

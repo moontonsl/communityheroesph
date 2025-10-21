@@ -491,7 +491,7 @@ class EventReportingController extends Controller
         if (!in_array($userRole, ['super-admin-a', 'super-admin'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Access denied. Only Super Admin can update financial information.'
+                'message' => 'Access denied. Only Super Admin can update Post Event Information.'
             ], 403);
         }
 
@@ -514,7 +514,7 @@ class EventReportingController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Financial information updated successfully',
+                'message' => 'Post Event Information updated successfully',
                 'report' => $report->fresh(['event', 'reportedBy'])
             ]);
 
@@ -526,7 +526,7 @@ class EventReportingController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update financial information. Please try again.'
+                'message' => 'Failed to update Post Event Information. Please try again.'
             ], 500);
         }
     }

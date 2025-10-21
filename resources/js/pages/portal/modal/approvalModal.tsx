@@ -19,8 +19,28 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
     const [moaFile, setMoaFile] = useState<File | null>(null);
     const [moaUploadError, setMoaUploadError] = useState('');
 
-    // Check if MOA upload is required (Community Lead pre-approving)
-    const isMoaUploadRequired = userRole === 'community-lead';
+    // Debug: Alert when modal opens
+    if (isOpen) {
+        console.log('ApprovalModal opened with props:', {
+            isOpen,
+            barangayName,
+            submissionId,
+            type,
+            userRole,
+            action
+        });
+    }
+
+    // Check if MOA upload is required (Super Admin final approval)
+    const isMoaUploadRequired = userRole === 'super-admin-a' || userRole === 'super-admin' || userRole === 'super-admin';
+    
+    // Debug: Log MOA upload requirement
+    console.log('MOA Upload Requirement Check:', {
+        userRole,
+        isMoaUploadRequired,
+        isSuperAdminA: userRole === 'super-admin-a',
+        isSuperAdmin: userRole === 'super-admin'
+    });
 
     if (!isOpen) return null;
 
@@ -45,7 +65,16 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
     const handleApprove = async () => {
         if (!submissionId) return;
         
-        // Validate MOA upload for Community Lead
+        // Debug: Log initial state
+        console.log('Approval process started:', {
+            submissionId,
+            isMoaUploadRequired,
+            moaFile: moaFile ? moaFile.name : 'No file selected',
+            userRole,
+            type
+        });
+        
+        // Validate MOA upload for Super Admin
         if (isMoaUploadRequired && !moaFile) {
             setMoaUploadError('Please upload the signed MOA PDF file');
             return;
@@ -61,6 +90,11 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
             
             // Upload MOA file if required
             if (isMoaUploadRequired && moaFile) {
+                console.log('Starting MOA file upload...', {
+                    fileName: moaFile.name,
+                    fileSize: moaFile.size,
+                    fileType: moaFile.type
+                });
                 const formData = new FormData();
                 formData.append('moa_file', moaFile);
                 formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
@@ -77,18 +111,42 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
                 
                 moaFilePath = uploadResponse.data.file_path;
                 moaFileName = uploadResponse.data.file_name;
+                
+                console.log('MOA file upload successful:', {
+                    filePath: moaFilePath,
+                    fileName: moaFileName
+                });
+            } else {
+                console.log('MOA upload not required or no file selected:', {
+                    isMoaUploadRequired,
+                    hasFile: !!moaFile
+                });
             }
             
             const endpoint = action === 'renew' 
                 ? `/api/admin/submissions/${submissionId}/renew`
                 : type === 'event' 
-                    ? `/api/admin/events/${submissionId}/pre-approve`
+                    ? (userRole === 'community-lead' 
+                        ? `/api/admin/events/${submissionId}/pre-approve`
+                        : `/api/admin/events/${submissionId}/approve`)
                     : `/api/admin/submissions/${submissionId}/approve`;
+            
+            // Debug: Log the data being sent
+            console.log('Sending approval data:', {
+                endpoint,
+                moaFilePath,
+                moaFileName,
+                isMoaUploadRequired,
+                userRole,
+                type
+            });
                 
             await axios.post(endpoint, {
                 admin_notes: action === 'renew' 
                     ? 'MOA renewed for 1 year'
-                    : `${type === 'event' ? 'Event' : 'Application'} pre-approved by Community Lead`,
+                    : userRole === 'community-lead'
+                        ? `${type === 'event' ? 'Event' : 'Application'} pre-approved by Community Lead`
+                        : `${type === 'event' ? 'Event' : 'Application'} approved by Super Admin with signed MOA`,
                 moa_file_path: moaFilePath,
                 moa_file_name: moaFileName,
                 _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
@@ -135,9 +193,13 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
                                 }
                             </p>
                             
-                            {/* MOA Upload Section for Community Lead */}
-                            {isMoaUploadRequired && (
-                                <div className="mb-6">
+                            {/* MOA Upload Section for Super Admin - TEMPORARILY ALWAYS SHOW FOR DEBUGGING */}
+                            {(() => {
+                                console.log('Rendering MOA upload section:', { isMoaUploadRequired, userRole, shouldShow: true });
+                                return true;
+                            })() ? (
+                                <div className="mb-6 bg-red-500 p-4 border-4 border-yellow-400">
+                                    <div className="text-white font-bold text-center mb-2">DEBUG: MOA UPLOAD SECTION SHOULD BE VISIBLE</div>
                                     <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4 mb-4">
                                         <div className="flex items-center mb-2">
                                             <svg className="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +208,7 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
                                             <h3 className="text-blue-400 font-semibold text-sm">MOA Upload Required</h3>
                                         </div>
                                         <p className="text-blue-300 text-xs">
-                                            As a Community Lead, you must upload the signed MOA PDF file to complete the pre-approval process.
+                                            As a Super Admin, you must upload the signed MOA PDF file to complete the final approval process.
                                         </p>
                                     </div>
                                     
@@ -192,7 +254,7 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
                                         )}
                                     </div>
                                 </div>
-                            )}
+                            ) : null}
                             
                             {error && (
                                 <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-4">

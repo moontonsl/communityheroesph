@@ -54,7 +54,7 @@ export default function Homepage() {
                     </div>
                     
                     <p className="hero-subtitle-mobile text-xl md:text-2xl lg:text-3xl mb-12 animate-slide-up text-gray-300 font-light max-w-3xl mx-auto leading-relaxed">
-                        Empowering Communities Through 
+                        Empowering Communities Through <br />
                         <span className="font-semibold text-transparent bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text"> Mobile Legends Tournament</span>
                     </p>
                     

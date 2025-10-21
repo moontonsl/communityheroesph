@@ -316,18 +316,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{id}', [App\Http\Controllers\Admin\EventReportingController::class, 'show'])->name('show');
         Route::get('/{id}/edit', [App\Http\Controllers\Admin\EventReportingController::class, 'edit'])->name('edit');
         Route::put('/{id}', [App\Http\Controllers\Admin\EventReportingController::class, 'update'])->name('update');
-            Route::post('/{id}/submit', [App\Http\Controllers\Admin\EventReportingController::class, 'submit'])->name('submit');
-            Route::delete('/{id}', [App\Http\Controllers\Admin\EventReportingController::class, 'destroy'])->name('destroy');
-            
-            // Admin actions
-            Route::post('/{id}/pre-approve', [App\Http\Controllers\Admin\EventReportingController::class, 'preApprove'])->name('pre-approve');
-            Route::post('/{id}/review', [App\Http\Controllers\Admin\EventReportingController::class, 'review'])->name('review');
-            Route::post('/{id}/approve', [App\Http\Controllers\Admin\EventReportingController::class, 'approve'])->name('approve');
-            
-            // Super Admin financial and clearance actions
-            Route::put('/{id}/financials', [App\Http\Controllers\Admin\EventReportingController::class, 'updateFinancials'])->name('update-financials');
-            Route::post('/{id}/first-clearance', [App\Http\Controllers\Admin\EventReportingController::class, 'firstClearance'])->name('first-clearance');
-            Route::post('/{id}/final-clearance', [App\Http\Controllers\Admin\EventReportingController::class, 'finalClearance'])->name('final-clearance');
+        Route::post('/{id}/submit', [App\Http\Controllers\Admin\EventReportingController::class, 'submit'])->name('submit');
+        Route::delete('/{id}', [App\Http\Controllers\Admin\EventReportingController::class, 'destroy'])->name('destroy');
+        
+        // Admin actions
+        Route::post('/{id}/pre-approve', [App\Http\Controllers\Admin\EventReportingController::class, 'preApprove'])->name('pre-approve');
+        Route::post('/{id}/review', [App\Http\Controllers\Admin\EventReportingController::class, 'review'])->name('review');
+        Route::post('/{id}/approve', [App\Http\Controllers\Admin\EventReportingController::class, 'approve'])->name('approve');
+        
+        // Super Admin financial and clearance actions
+        Route::put('/{id}/financials', [App\Http\Controllers\Admin\EventReportingController::class, 'updateFinancials'])->name('update-financials');
+        Route::post('/{id}/first-clearance', [App\Http\Controllers\Admin\EventReportingController::class, 'firstClearance'])->name('first-clearance');
+        Route::post('/{id}/final-clearance', [App\Http\Controllers\Admin\EventReportingController::class, 'finalClearance'])->name('final-clearance');
     });
 });
 
@@ -424,26 +424,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // File upload and form submission routes - Protected
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/api/upload-moa', function () {
-        $request = request();
-        
-        // Validate file
-        $request->validate([
-            'moa_file' => 'required|file|mimes:pdf|max:10240' // 10MB max
-        ]);
-        
-        // Store file
-        $file = $request->file('moa_file');
-        $fileName = time() . '_' . $file->getClientOriginalName();
-        $filePath = $file->storeAs('moa_files', $fileName, 'public');
-        
-        return response()->json([
-            'success' => true,
-            'file_path' => $filePath,
-            'file_name' => $fileName
-        ]);
-    });
-
     Route::post('/api/upload-proposal', function () {
         $request = request();
         
@@ -503,6 +483,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Upload MOA file for Community Lead pre-approval
     Route::post('/api/upload-moa', function () {
         $request = request();
+        
+        // Debug logging
+        \Log::info('MOA upload request received', [
+            'has_file' => $request->hasFile('moa_file'),
+            'file_name' => $request->file('moa_file') ? $request->file('moa_file')->getClientOriginalName() : 'no file',
+            'file_size' => $request->file('moa_file') ? $request->file('moa_file')->getSize() : 0
+        ]);
         
         try {
             // Validate file
@@ -759,10 +746,16 @@ Route::middleware(['auth'])->group(function () {
         
         // Determine approval type based on user role and current status
         if ($userRole === 'community-lead' && $submission->status === 'PENDING') {
-            // Community Lead pre-approval
+            // Community Lead pre-approval (no MOA upload required)
             $submission->preApprove($user, $request->admin_notes);
         } elseif (($userRole === 'super-admin-a' || $userRole === 'super-admin') && $submission->status === 'PRE_APPROVED') {
-            // Super Admin final approval - sets 1-year expiry
+            // Super Admin final approval - MOA upload required
+            if (!$request->moa_file_path || !$request->moa_file_name) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Signed MOA PDF file is required for final approval'
+                ], 400);
+            }
             $submission->approve($user, $request->admin_notes);
         } else {
             return response()->json([
@@ -830,20 +823,11 @@ Route::middleware(['auth'])->group(function () {
             $event = \App\Models\Event::findOrFail($id);
             
             $request->validate([
-                'admin_notes' => 'nullable|string|max:1000',
-                'moa_file_path' => 'nullable|string',
-                'moa_file_name' => 'nullable|string'
+                'admin_notes' => 'nullable|string|max:1000'
             ]);
             
+            // Community Lead pre-approval (no MOA upload required)
             $event->preApprove(auth()->user(), $request->admin_notes);
-            
-            // Update event with MOA file info if provided (Community Lead pre-approval)
-            if ($request->moa_file_path && $request->moa_file_name) {
-                $event->update([
-                    'moa_file_path' => $request->moa_file_path,
-                    'moa_file_name' => $request->moa_file_name
-                ]);
-            }
             
             return response()->json([
                 'success' => true,
@@ -862,22 +846,50 @@ Route::middleware(['auth'])->group(function () {
         }
     });
     
-    // Approve event
+    // Event final approval route (Super Admin only)
     Route::post('/api/admin/events/{id}/approve', function ($id) {
         $request = request();
-        $event = \App\Models\Event::findOrFail($id);
         
-        $request->validate([
-            'admin_notes' => 'nullable|string|max:1000'
+        // Debug logging
+        \Log::info('Event final approval request received', [
+            'event_id' => $id,
+            'request_data' => $request->all(),
+            'user_role' => auth()->user()->role->slug ?? 'no-role'
         ]);
         
-        $event->finalApprove(auth()->user(), $request->admin_notes);
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Event approved successfully',
-            'event' => $event->fresh(['approvedBy'])
-        ]);
+        try {
+            $event = \App\Models\Event::findOrFail($id);
+            
+            $request->validate([
+                'admin_notes' => 'nullable|string|max:1000',
+                'moa_file_path' => 'required|string',
+                'moa_file_name' => 'required|string'
+            ]);
+            
+            // Super Admin final approval - MOA upload required
+            $event->approve(auth()->user(), $request->admin_notes);
+            
+            // Update event with MOA file info
+            $event->update([
+                'moa_file_path' => $request->moa_file_path,
+                'moa_file_name' => $request->moa_file_name
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Event approved successfully with signed MOA'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Event final approval failed', [
+                'event_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to approve event'
+            ], 500);
+        }
     });
     
     // Reject event

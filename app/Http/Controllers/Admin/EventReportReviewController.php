@@ -170,8 +170,19 @@ class EventReportReviewController extends Controller
         $user = Auth::user();
         $userRole = $user->role->slug ?? '';
 
+        // Debug logging
+        \Log::info('Final clearance request received', [
+            'report_id' => $id,
+            'user_id' => $user->id,
+            'user_role' => $userRole
+        ]);
+
         // Only Super Admin B can do final clearance
         if ($userRole !== 'super-admin-b') {
+            \Log::warning('Final clearance access denied', [
+                'user_role' => $userRole,
+                'expected_role' => 'super-admin-b'
+            ]);
             return redirect()->back()->withErrors(['error' => 'Access denied. Only Super Admin B can perform final clearance.']);
         }
 
@@ -204,7 +215,7 @@ class EventReportReviewController extends Controller
 
         // Only Super Admin and Super Admin A can update financials
         if (!in_array($userRole, ['super-admin', 'super-admin-a'])) {
-            return redirect()->back()->withErrors(['error' => 'Access denied. Only Super Admin and Super Admin A can update financial information.']);
+            return redirect()->back()->withErrors(['error' => 'Access denied. Only Super Admin and Super Admin A can update Post Event Information.']);
         }
 
         $report = EventReporting::findOrFail($id);
@@ -224,8 +235,23 @@ class EventReportReviewController extends Controller
                 'total_cost_php' => $request->total_cost_php
             ]);
 
+            // Update the associated event status to CLEARED for first clearance
+            if ($report->event) {
+                $report->event->update([
+                    'status' => 'CLEARED',
+                    'admin_notes' => 'Event cleared after post-event financial information update by Super Admin A'
+                ]);
+            }
+
+            // Update the report's first clearance status to CLEARED
+            $report->update([
+                'first_clearance_status' => 'CLEARED',
+                'first_cleared_at' => now(),
+                'first_cleared_by' => $user->id
+            ]);
+
             return redirect()->route('event-report-review.show', $report->id)
-                            ->with('success', 'Financial information updated successfully');
+                            ->with('success', 'Post Event Information updated successfully and event status updated to CLEARED');
 
         } catch (\Exception $e) {
             \Log::error('Financial update failed', [
@@ -233,7 +259,7 @@ class EventReportReviewController extends Controller
                 'error' => $e->getMessage()
             ]);
 
-            return redirect()->back()->withErrors(['error' => 'Failed to update financial information. Please try again.']);
+            return redirect()->back()->withErrors(['error' => 'Failed to update Post Event Information. Please try again.']);
         }
     }
 }

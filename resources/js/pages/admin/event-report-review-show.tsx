@@ -184,45 +184,70 @@ export default function EventReportReviewShow({ report, user, flash }: Props) {
 
     const handleFinalClearance = () => {
         if (confirm('Are you sure you want to mark this report as final cleared?')) {
+            console.log('Final clearance request started for report:', report.id);
             fetch(`/event-report-review/${report.id}/final-clearance`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 }
-            }).then(() => {
-                window.location.reload();
+            }).then((response) => {
+                console.log('Final clearance response:', response.status, response.statusText);
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    console.error('Final clearance failed:', response);
+                    alert('Failed to complete final clearance. Please try again.');
+                }
+            }).catch((error) => {
+                console.error('Final clearance error:', error);
+                alert('Error completing final clearance. Please try again.');
             });
         }
     };
 
     const handleUpdateFinancials = () => {
         setIsUpdatingFinancials(true);
+        console.log('Mark Cleared button clicked - User role:', user?.role?.slug);
+        console.log('Report data:', {
+            id: report.id,
+            first_clearance_status: report.first_clearance_status,
+            final_clearance_status: report.final_clearance_status,
+            status: report.status
+        });
+        
         fetch(`/event-report-review/${report.id}/financials`, {
-            method: 'PUT',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
             },
-            body: JSON.stringify(financialData)
-        }).then(() => {
+            body: JSON.stringify({
+                ...financialData,
+                _method: 'PUT'
+            })
+        }).then((response) => {
+            console.log('Mark Cleared response:', response.status, response.statusText);
             setIsUpdatingFinancials(false);
-            window.location.reload();
-        }).catch(() => {
+            
+            // Don't reload immediately - show response first
+            if (response.ok) {
+                alert('Financial information updated successfully! Click OK to reload the page.');
+                window.location.reload();
+            } else {
+                alert('Failed to update financial information. Check console for details.');
+            }
+        }).catch((error) => {
+            console.error('Mark Cleared error:', error);
             setIsUpdatingFinancials(false);
+            alert('Error updating financial information. Check console for details.');
         });
     };
 
     return (
-        <AppLayout
-            user={user}
-            header={
-                <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                    Event Report Review
-                </h2>
-            }
-        >
+        <AppLayout>
             <Head title={`Event Report Review - ${report.event_name}`} />
+
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -303,10 +328,10 @@ export default function EventReportReviewShow({ report, user, flash }: Props) {
                                 </div>
                             </div>
 
-                            {/* Financial Information - Only for Super Admin and Super Admin A */}
+                            {/* Post Event Information - Only for Super Admin and Super Admin A */}
                             {(user?.role?.slug === 'super-admin' || user?.role?.slug === 'super-admin-a') && (
                                 <div>
-                                    <h3 className="text-2xl font-bold text-white mb-4">Financial Information</h3>
+                                    <h3 className="text-2xl font-bold text-white mb-4">Post Event Information</h3>
                                     <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
@@ -352,14 +377,49 @@ export default function EventReportReviewShow({ report, user, flash }: Props) {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="mt-4">
+                                        <div className="mt-4 text-end">
                                             <button
                                                 onClick={handleUpdateFinancials}
                                                 disabled={isUpdatingFinancials}
-                                                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white rounded-lg transition-colors"
+                                                className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white rounded-lg transition-colors"
                                             >
-                                                {isUpdatingFinancials ? 'Updating...' : 'Update Financial Information'}
+                                                {isUpdatingFinancials ? 'Updating...' : 'Mark Cleared'}
                                             </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Post Event Information - Read-only for Super Admin B */}
+                            {user?.role?.slug === 'super-admin-b' && (
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white mb-4">Post Event Information</h3>
+                                    <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-gray-400 text-sm font-semibold mb-2">PIC</label>
+                                                <div className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white">
+                                                    {report.pic || 'Not specified'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-gray-400 text-sm font-semibold mb-2">Cash Allocation</label>
+                                                <div className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white">
+                                                    {report.cash_allocation ? `₱${report.cash_allocation.toLocaleString()}` : 'Not specified'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-gray-400 text-sm font-semibold mb-2">Diamonds Expenditure</label>
+                                                <div className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white">
+                                                    {report.diamonds_expenditure ? report.diamonds_expenditure.toLocaleString() : 'Not specified'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-gray-400 text-sm font-semibold mb-2">Total Cost (PHP)</label>
+                                                <div className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white">
+                                                    {report.total_cost_php ? `₱${report.total_cost_php.toLocaleString()}` : 'Not specified'}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -540,7 +600,7 @@ export default function EventReportReviewShow({ report, user, flash }: Props) {
                                                 onClick={handleFinalClearance}
                                                 className="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
                                             >
-                                                Final Clearance
+                                                Clearance Approved
                                             </button>
                                         )}
                                     </div>

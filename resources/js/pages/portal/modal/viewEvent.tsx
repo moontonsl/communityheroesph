@@ -116,35 +116,6 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess, 
     const openDeleteModal = () => setIsDeleteModalOpen(true);
     const closeDeleteModal = () => setIsDeleteModalOpen(false);
 
-    const handleFinalApprove = async () => {
-        try {
-            const response = await fetch(`/api/admin/events/${eventData?.id}/approve`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    admin_notes: 'Event approved for final approval by Super Admin A'
-                })
-            });
-
-            const result = await response.json();
-            
-            if (result.success) {
-                alert('Event approved successfully!');
-                onSuccess?.();
-                onClose();
-            } else {
-                alert('Error: ' + result.message);
-            }
-        } catch (error) {
-            console.error('Approval error:', error);
-            alert('Error approving event. Please try again.');
-        }
-    };
-
     const handleReject = async () => {
         const reason = prompt('Please provide a reason for rejection:');
         if (!reason) return;
@@ -450,7 +421,7 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess, 
                                 {/* Super Admin Final Approval Button for PRE_APPROVED events */}
                                 {(user?.role?.slug === 'super-admin-a' || user?.role?.slug === 'super-admin') && eventData.status === 'PRE_APPROVED' && (
                                     <button
-                                        onClick={handleFinalApprove}
+                                        onClick={openApprovalModal}
                                         className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-bold transition-colors"
                                     >
                                         APPROVE MOA
