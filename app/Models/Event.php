@@ -131,6 +131,9 @@ class Event extends Model
             'reviewed_at' => now(),
             'admin_notes' => $notes
         ]);
+
+        // Sync to Airtable
+        $this->syncToAirtable();
     }
 
     public function finalApprove(User $user, string $notes = null): void
@@ -151,6 +154,9 @@ class Event extends Model
             'approved_at' => now(),
             'admin_notes' => $notes
         ]);
+
+        // Sync to Airtable
+        $this->syncToAirtable();
     }
 
     public function reject(User $user, string $reason, string $notes = null): void
@@ -162,6 +168,9 @@ class Event extends Model
             'rejection_reason' => $reason,
             'admin_notes' => $notes
         ]);
+
+        // Sync to Airtable
+        $this->syncToAirtable();
     }
 
     public function markCompleted(User $user, bool $successful = true): void
@@ -237,5 +246,29 @@ class Event extends Model
     public function scopeByBarangay($query, $barangaySubmissionId)
     {
         return $query->where('barangay_submission_id', $barangaySubmissionId);
+    }
+
+    /**
+     * Sync this event to Airtable
+     */
+    private function syncToAirtable(): void
+    {
+        if (config('airtable.sync.enabled', true)) {
+            try {
+                \App\Jobs\SyncToAirtableJob::dispatch('event', $this->id, 'update');
+                \Log::info('Airtable sync job dispatched for event update', [
+                    'event_id' => $this->event_id,
+                    'id' => $this->id,
+                    'status' => $this->status
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to dispatch Airtable sync job for event update', [
+                    'event_id' => $this->event_id,
+                    'id' => $this->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Don't fail the main operation if Airtable sync fails
+            }
+        }
     }
 }

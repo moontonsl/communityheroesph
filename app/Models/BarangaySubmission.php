@@ -154,6 +154,9 @@ class BarangaySubmission extends Model
             'is_moa_expired' => false,
             'admin_notes' => $notes
         ]);
+
+        // Sync to Airtable
+        $this->syncToAirtable();
     }
 
     public function preApprove(User $user, string $notes = null): void
@@ -164,6 +167,9 @@ class BarangaySubmission extends Model
             'reviewed_at' => now(),
             'admin_notes' => $notes
         ]);
+
+        // Sync to Airtable
+        $this->syncToAirtable();
     }
 
     public function reject(User $user, string $reason, string $notes = null): void
@@ -175,6 +181,9 @@ class BarangaySubmission extends Model
             'rejection_reason' => $reason,
             'admin_notes' => $notes
         ]);
+
+        // Sync to Airtable
+        $this->syncToAirtable();
     }
 
     public function markUnderReview(User $user, string $notes = null): void
@@ -185,6 +194,9 @@ class BarangaySubmission extends Model
             'reviewed_at' => now(),
             'admin_notes' => $notes
         ]);
+
+        // Sync to Airtable
+        $this->syncToAirtable();
     }
 
     public function markMoaExpired(): void
@@ -205,6 +217,9 @@ class BarangaySubmission extends Model
             'approved_at' => now(),
             'admin_notes' => $notes
         ]);
+
+        // Sync to Airtable
+        $this->syncToAirtable();
     }
 
     public function scopePending($query)
@@ -345,5 +360,29 @@ class BarangaySubmission extends Model
     public function scopePlatinum($query)
     {
         return $query->where('tier', 'PLATINUM');
+    }
+
+    /**
+     * Sync this submission to Airtable
+     */
+    public function syncToAirtable(): void
+    {
+        if (config('airtable.sync.enabled', true)) {
+            try {
+                \App\Jobs\SyncToAirtableJob::dispatch('barangay_submission', $this->id, 'update');
+                \Log::info('Airtable sync job dispatched for barangay submission update', [
+                    'submission_id' => $this->submission_id,
+                    'id' => $this->id,
+                    'status' => $this->status
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to dispatch Airtable sync job for update', [
+                    'submission_id' => $this->submission_id,
+                    'id' => $this->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Don't fail the main operation if Airtable sync fails
+            }
+        }
     }
 }

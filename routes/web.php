@@ -94,6 +94,11 @@ Route::middleware(['auth', 'verified', 'redirect.admin'])->group(function () {
             Route::post('/airtable/sync-all', [App\Http\Controllers\Admin\AirtableController::class, 'syncAll'])->name('airtable.sync-all');
             Route::post('/airtable/sync-submission/{id}', [App\Http\Controllers\Admin\AirtableController::class, 'syncBarangaySubmission'])->name('airtable.sync-submission');
             Route::post('/airtable/sync-event/{id}', [App\Http\Controllers\Admin\AirtableController::class, 'syncEvent'])->name('airtable.sync-event');
+            
+            // New endpoints for getting and updating records
+            Route::get('/airtable/record/{submissionId}', [App\Http\Controllers\Admin\AirtableController::class, 'getRecord'])->name('airtable.get-record');
+            Route::put('/airtable/update-status/{submissionId}', [App\Http\Controllers\Admin\AirtableController::class, 'updateStatus'])->name('airtable.update-status');
+            Route::get('/airtable/submissions', [App\Http\Controllers\Admin\AirtableController::class, 'getSubmissions'])->name('airtable.get-submissions');
         });
     });
 });

@@ -222,3 +222,7 @@ If you encounter issues:
 2. Test the connection using the admin interface
 3. Verify your Airtable base structure matches the requirements
 4. Ensure your API credentials are correct
+
+
+
+
