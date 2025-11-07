@@ -121,7 +121,8 @@ class SyncToAirtableJob implements ShouldQueue
     {
         return match ($this->modelType) {
             'barangay_submission' => $airtableService->syncBarangaySubmission($model),
-            'event' => $airtableService->syncEvent($model),
+            // Pass action so the service can create vs update
+            'event' => $airtableService->syncEvent($model, $this->action),
             'event_reporting' => $airtableService->syncEventReporting($model),
             default => ['success' => false, 'error' => 'Unknown model type'],
         };
@@ -141,6 +142,8 @@ class SyncToAirtableJob implements ShouldQueue
         ]);
     }
 }
+
+
 
 
 

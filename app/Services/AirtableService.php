@@ -85,17 +85,49 @@ class AirtableService
     /**
      * Sync event to Airtable
      */
-    public function syncEvent(Event $event): array
+    public function syncEvent(Event $event, string $action = 'create'): array
     {
         try {
             $airtableData = $this->formatEventForAirtable($event);
-            
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/Events', [
-                'fields' => $airtableData
-            ]);
+
+            // Link to Barangay Submissions via Brgy ID (link field) using our Submission ID
+            if ($event->barangaySubmission?->submission_id) {
+                $linkedId = $this->getBarangaySubmissionRecordIdBySubmissionId($event->barangaySubmission->submission_id);
+                if ($linkedId) {
+                    $airtableData['Brgy ID'] = [$linkedId];
+                }
+            }
+
+            // Decide create vs update
+            if ($action === 'update') {
+                $recordId = $this->getEventRecordIdByEventId($event->event_id);
+                if ($recordId) {
+                    $response = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Content-Type' => 'application/json',
+                    ])->patch($this->baseUrl . '/Events/' . $recordId, [
+                        'fields' => $airtableData
+                    ]);
+                } else {
+                    // If not found, fall back to create to ensure Airtable has it
+                    Log::warning('Event record not found in Airtable, creating instead of updating', [
+                        'event_id' => $event->event_id
+                    ]);
+                    $response = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Content-Type' => 'application/json',
+                    ])->post($this->baseUrl . '/Events', [
+                        'fields' => $airtableData
+                    ]);
+                }
+            } else {
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type' => 'application/json',
+                ])->post($this->baseUrl . '/Events', [
+                    'fields' => $airtableData
+                ]);
+            }
 
             if ($response->successful()) {
                 $result = $response->json();
@@ -133,6 +165,74 @@ class AirtableService
                 'success' => false,
                 'error' => $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Resolve Airtable record ID in "Events" by our Event ID.
+     */
+    private function getEventRecordIdByEventId(string $eventId): ?string
+    {
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+            ])->get($this->baseUrl . '/Events', [
+                'maxRecords' => 1,
+                'filterByFormula' => sprintf('( {Event ID} = "%s" )', $eventId),
+            ]);
+
+            if (!$response->successful()) {
+                Log::warning('Airtable lookup failed for event', [
+                    'event_id' => $eventId,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+                return null;
+            }
+
+            $data = $response->json();
+            $records = $data['records'] ?? [];
+            return $records[0]['id'] ?? null;
+        } catch (\Exception $e) {
+            Log::warning('Airtable lookup exception (event)', [
+                'event_id' => $eventId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Resolve Airtable record ID in "Barangay Submissions" by our Submission ID.
+     */
+    private function getBarangaySubmissionRecordIdBySubmissionId(string $submissionId): ?string
+    {
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+            ])->get($this->baseUrl . '/Barangay%20Submissions', [
+                'maxRecords' => 1,
+                'filterByFormula' => sprintf('( {Submission ID} = "%s" )', $submissionId),
+            ]);
+
+            if (!$response->successful()) {
+                Log::warning('Airtable lookup failed for submission', [
+                    'submission_id' => $submissionId,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+                return null;
+            }
+
+            $data = $response->json();
+            $records = $data['records'] ?? [];
+            return $records[0]['id'] ?? null;
+        } catch (\Exception $e) {
+            Log::warning('Airtable lookup exception', [
+                'submission_id' => $submissionId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
         }
     }
 
@@ -229,25 +329,38 @@ class AirtableService
      */
     private function formatEventForAirtable(Event $event): array
     {
+        // Only include fields that exist in your Airtable "Events" table to avoid 422 errors
         return [
+            // Identifiers
             'Event ID' => $event->event_id,
+
+            // Core event info
             'Event Name' => $event->event_name,
-            'Event Description' => $event->event_description,
+            'Description' => $event->event_description,
+            'Campaign' => $event->campaign,
             'Event Date' => $event->event_date?->format('Y-m-d'),
             'Event Start Time' => $event->event_start_time?->format('H:i'),
             'Event End Time' => $event->event_end_time?->format('H:i'),
-            'Event Location' => $event->event_location,
-            'Campaign' => $event->campaign,
-            'Expected Participants' => $event->expected_participants,
             'Event Type' => $event->event_type,
+            'Location' => $event->event_location,
+            'Expected Participants' => $event->expected_participants,
+
+            // Contact & requirements
             'Contact Person' => $event->contact_person,
             'Contact Number' => $event->contact_number,
             'Contact Email' => $event->contact_email,
             'Requirements' => $event->requirements,
+
+            // Status / outcomes
             'Status' => $event->status,
             'Is Successful' => $event->is_successful,
+            'Completed At' => $event->completed_at?->format('Y-m-d'),
+
+            // Files (names only)
             'Proposal File Name' => $event->proposal_file_name,
             'MOA File Name' => $event->moa_file_name,
+
+            // Admin / review
             'Rejection Reason' => $event->rejection_reason,
             'Admin Notes' => $event->admin_notes,
             'Applied By' => $event->appliedBy?->name,
@@ -255,14 +368,16 @@ class AirtableService
             'Approved At' => $event->approved_at?->format('Y-m-d'),
             'Reviewed By' => $event->reviewedBy?->name,
             'Reviewed At' => $event->reviewed_at?->format('Y-m-d'),
-            'Completed At' => $event->completed_at?->format('Y-m-d'),
-            'Created At' => $event->created_at->format('Y-m-d'),
-            'Updated At' => $event->updated_at->format('Y-m-d'),
-            // Related barangay data
+
+            // Related barangay info for convenience
             'Barangay Name' => $event->barangaySubmission?->barangay_name,
             'Municipality' => $event->barangaySubmission?->municipality_name,
             'Province' => $event->barangaySubmission?->province_name,
             'Region' => $event->barangaySubmission?->region_name,
+
+            // Timestamps
+            'Created At' => $event->created_at?->format('Y-m-d'),
+            'Updated At' => $event->updated_at?->format('Y-m-d'),
         ];
     }
 

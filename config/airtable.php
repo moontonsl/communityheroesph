@@ -64,6 +64,7 @@ return [
 
     'sync' => [
         'enabled' => env('AIRTABLE_SYNC_ENABLED', true),
+        'immediate' => env('AIRTABLE_SYNC_IMMEDIATE', false),
         'queue' => env('AIRTABLE_SYNC_QUEUE', 'default'),
         'retry_attempts' => env('AIRTABLE_SYNC_RETRY_ATTEMPTS', 3),
         'retry_delay' => env('AIRTABLE_SYNC_RETRY_DELAY', 60), // seconds

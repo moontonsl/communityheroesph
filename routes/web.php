@@ -566,22 +566,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'status' => 'PENDING'
             ]);
             
-            // Sync to Airtable if enabled
-            if (config('airtable.sync.enabled', true)) {
-                try {
-                    \App\Jobs\SyncToAirtableJob::dispatch('barangay_submission', $submission->id, 'create');
-                    \Log::info('Airtable sync job dispatched for barangay submission', [
-                        'submission_id' => $submission->submission_id,
-                        'id' => $submission->id
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('Failed to dispatch Airtable sync job', [
-                        'submission_id' => $submission->submission_id,
-                        'error' => $e->getMessage()
-                    ]);
-                    // Don't fail the main request if Airtable sync fails
-                }
-            }
+			// Sync to Airtable if enabled
+			if (config('airtable.sync.enabled', true)) {
+				try {
+					if (config('airtable.sync.immediate', false)) {
+						\App\Jobs\SyncToAirtableJob::dispatchSync('barangay_submission', $submission->id, 'create');
+						\Log::info('Airtable sync executed immediately for barangay submission', [
+							'submission_id' => $submission->submission_id,
+							'id' => $submission->id
+						]);
+					} else {
+						\App\Jobs\SyncToAirtableJob::dispatch('barangay_submission', $submission->id, 'create');
+						\Log::info('Airtable sync job dispatched for barangay submission', [
+							'submission_id' => $submission->submission_id,
+							'id' => $submission->id
+						]);
+					}
+				} catch (\Exception $e) {
+					\Log::error('Failed to queue/execute Airtable sync', [
+						'submission_id' => $submission->submission_id,
+						'error' => $e->getMessage()
+					]);
+					// Don't fail the main request if Airtable sync fails
+				}
+			}
             
             return response()->json([
                 'success' => true,
@@ -611,15 +619,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         try {
             \Log::info('Event application request received', $request->all());
             
-            // Validate form data
-            $request->validate([
+			// Validate form data (return 422 with field errors on failure)
+			try {
+				$request->validate([
                 'barangay_submission_id' => 'required|exists:barangay_submissions,id',
                 'event_name' => 'required|string|max:255',
                 'event_description' => 'required|string|max:1000',
                 'event_date' => 'required|date|after_or_equal:today',
                 'campaign' => 'required|string|max:255',
                 'event_location' => 'required|string|max:255',
-                'expected_participants' => 'required|integer|min:1|max:10000',
+				'expected_participants' => 'required|integer|min:1|max:500000',
                 'event_type' => 'nullable|string|max:100',
                 'contact_person' => 'required|string|max:255',
                 'contact_number' => 'required|string|max:20',
@@ -627,14 +636,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'requirements' => 'nullable|string|max:1000',
                 'proposal_file_path' => 'required|string',
                 'proposal_file_name' => 'required|string'
-            ], [
+			], [
                 'event_date.after_or_equal' => 'The event date must be today or a future date.',
                 'barangay_submission_id.exists' => 'Please select a valid barangay.',
                 'expected_participants.min' => 'Expected participants must be at least 1.',
-                'expected_participants.max' => 'Expected participants cannot exceed 10,000.',
+				'expected_participants.max' => 'Expected participants cannot exceed 500,000.',
                 'contact_email.email' => 'Please enter a valid email address.',
                 'proposal_file_path.required' => 'Please upload a proposal file.'
-            ]);
+			]);
+			} catch (\Illuminate\Validation\ValidationException $e) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Validation failed.',
+					'errors' => $e->errors(),
+				], 422);
+			}
             
             // Determine initial status based on user role
             $user = auth()->user();
@@ -667,22 +683,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'status' => $initialStatus
             ]);
             
-            // Sync to Airtable if enabled
-            if (config('airtable.sync.enabled', true)) {
-                try {
-                    \App\Jobs\SyncToAirtableJob::dispatch('event', $event->id, 'create');
-                    \Log::info('Airtable sync job dispatched for event', [
-                        'event_id' => $event->event_id,
-                        'id' => $event->id
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('Failed to dispatch Airtable sync job for event', [
-                        'event_id' => $event->event_id,
-                        'error' => $e->getMessage()
-                    ]);
-                    // Don't fail the main request if Airtable sync fails
-                }
-            }
+			// Sync to Airtable if enabled
+			if (config('airtable.sync.enabled', true)) {
+				try {
+					if (config('airtable.sync.immediate', false)) {
+						\App\Jobs\SyncToAirtableJob::dispatchSync('event', $event->id, 'create');
+						\Log::info('Airtable sync executed immediately for event', [
+							'event_id' => $event->event_id,
+							'id' => $event->id
+						]);
+					} else {
+						\App\Jobs\SyncToAirtableJob::dispatch('event', $event->id, 'create');
+						\Log::info('Airtable sync job dispatched for event', [
+							'event_id' => $event->event_id,
+							'id' => $event->id
+						]);
+					}
+				} catch (\Exception $e) {
+					\Log::error('Failed to queue/execute Airtable sync for event', [
+						'event_id' => $event->event_id,
+						'error' => $e->getMessage()
+					]);
+					// Don't fail the main request if Airtable sync fails
+				}
+			}
             
             return response()->json([
                 'success' => true,

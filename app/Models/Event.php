@@ -255,14 +255,23 @@ class Event extends Model
     {
         if (config('airtable.sync.enabled', true)) {
             try {
-                \App\Jobs\SyncToAirtableJob::dispatch('event', $this->id, 'update');
-                \Log::info('Airtable sync job dispatched for event update', [
-                    'event_id' => $this->event_id,
-                    'id' => $this->id,
-                    'status' => $this->status
-                ]);
+                if (config('airtable.sync.immediate', false)) {
+                    \App\Jobs\SyncToAirtableJob::dispatchSync('event', $this->id, 'update');
+                    \Log::info('Airtable sync executed immediately for event update', [
+                        'event_id' => $this->event_id,
+                        'id' => $this->id,
+                        'status' => $this->status
+                    ]);
+                } else {
+                    \App\Jobs\SyncToAirtableJob::dispatch('event', $this->id, 'update');
+                    \Log::info('Airtable sync job dispatched for event update', [
+                        'event_id' => $this->event_id,
+                        'id' => $this->id,
+                        'status' => $this->status
+                    ]);
+                }
             } catch (\Exception $e) {
-                \Log::error('Failed to dispatch Airtable sync job for event update', [
+                \Log::error('Failed to queue/execute Airtable sync for event update', [
                     'event_id' => $this->event_id,
                     'id' => $this->id,
                     'error' => $e->getMessage()
