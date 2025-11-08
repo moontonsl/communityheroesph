@@ -495,6 +495,12 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess, 
                 onClose={closeDeleteModal}
                 barangayName={eventData.barangaySubmission?.barangay_name || (eventData as any).barangay_submission?.barangay_name || 'Unknown'}
                 submissionId={eventData.id}
+                type="event"
+                onSuccess={() => {
+                    closeDeleteModal();
+                    onSuccess?.();
+                    onClose();
+                }}
             />
         </>
     );

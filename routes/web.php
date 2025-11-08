@@ -939,6 +939,31 @@ Route::middleware(['auth'])->group(function () {
             'event' => $event->fresh(['reviewedBy'])
         ]);
     });
+
+    // Delete event
+    Route::delete('/api/admin/events/{id}', function ($id) {
+        $request = request();
+        $event = \App\Models\Event::findOrFail($id);
+        
+        $request->validate([
+            'admin_notes' => 'required|string|max:1000'
+        ]);
+        
+        // Store admin notes before deletion
+        $event->update([
+            'admin_notes' => $request->admin_notes,
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now()
+        ]);
+        
+        // Delete the event
+        $event->delete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Event deleted successfully'
+        ]);
+    });
     
     // Reject submission
     Route::post('/api/admin/submissions/{id}/reject', function ($id) {

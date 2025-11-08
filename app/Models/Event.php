@@ -61,6 +61,24 @@ class Event extends Model
                 $model->event_id = 'CH-EVENT-' . strtoupper(Str::random(6));
             }
         });
+
+        static::deleting(function ($model) {
+            if (config('airtable.sync.enabled', true)) {
+                try {
+                    \App\Jobs\SyncToAirtableJob::dispatch('event', $model->id, 'delete', $model->event_id);
+                    \Log::info('Airtable delete job dispatched for event', [
+                        'event_id' => $model->event_id,
+                        'id' => $model->id,
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to dispatch Airtable delete job for event', [
+                        'event_id' => $model->event_id,
+                        'id' => $model->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        });
     }
 
     public function barangaySubmission(): BelongsTo

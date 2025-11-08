@@ -23,15 +23,17 @@ class SyncToAirtableJob implements ShouldQueue
     protected string $modelType;
     protected int $modelId;
     protected string $action;
+    protected ?string $uniqueKey = null;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(string $modelType, int $modelId, string $action = 'create')
+    public function __construct(string $modelType, int $modelId, string $action = 'create', ?string $uniqueKey = null)
     {
         $this->modelType = $modelType;
         $this->modelId = $modelId;
         $this->action = $action;
+        $this->uniqueKey = $uniqueKey;
         
         // Set queue based on configuration
         $this->onQueue(config('airtable.sync.queue', 'default'));
@@ -47,12 +49,13 @@ class SyncToAirtableJob implements ShouldQueue
                 'model_type' => $this->modelType,
                 'model_id' => $this->modelId,
                 'action' => $this->action,
+                'unique_key' => $this->uniqueKey,
                 'attempt' => $this->attempts()
             ]);
 
             $model = $this->getModel();
             
-            if (!$model) {
+            if (!$model && $this->action !== 'delete') {
                 Log::warning('Model not found for Airtable sync', [
                     'model_type' => $this->modelType,
                     'model_id' => $this->modelId
@@ -66,12 +69,14 @@ class SyncToAirtableJob implements ShouldQueue
                 Log::info('Airtable sync completed successfully', [
                     'model_type' => $this->modelType,
                     'model_id' => $this->modelId,
+                    'action' => $this->action,
                     'airtable_id' => $result['airtable_id'] ?? null
                 ]);
             } else {
                 Log::error('Airtable sync failed', [
                     'model_type' => $this->modelType,
                     'model_id' => $this->modelId,
+                    'action' => $this->action,
                     'error' => $result['error'] ?? 'Unknown error'
                 ]);
                 
@@ -120,9 +125,13 @@ class SyncToAirtableJob implements ShouldQueue
     private function syncModel(AirtableService $airtableService, $model): array
     {
         return match ($this->modelType) {
-            'barangay_submission' => $airtableService->syncBarangaySubmission($model),
-            // Pass action so the service can create vs update
-            'event' => $airtableService->syncEvent($model, $this->action),
+            'barangay_submission' => $this->action === 'delete'
+                ? $airtableService->deleteBarangaySubmissionBySubmissionId($this->uniqueKey ?? ($model?->submission_id ?? ''))
+                : $airtableService->syncBarangaySubmission($model),
+            // Pass action so the service can create vs update or delete
+            'event' => $this->action === 'delete'
+                ? $airtableService->deleteEventByEventId($this->uniqueKey ?? ($model?->event_id ?? ''))
+                : $airtableService->syncEvent($model, $this->action),
             'event_reporting' => $airtableService->syncEventReporting($model),
             default => ['success' => false, 'error' => 'Unknown model type'],
         };

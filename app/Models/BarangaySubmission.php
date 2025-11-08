@@ -64,6 +64,42 @@ class BarangaySubmission extends Model
                 $model->submission_id = 'CH-' . strtoupper(Str::random(8));
             }
         });
+
+        static::deleting(function ($model) {
+            if (config('airtable.sync.enabled', true)) {
+                try {
+                    // Ensure all related events are also deleted in Airtable (DB cascade won't fire model events)
+                    try {
+                        $relatedEvents = $model->events()->select('id', 'event_id')->get();
+                        foreach ($relatedEvents as $event) {
+                            \App\Jobs\SyncToAirtableJob::dispatch('event', $event->id, 'delete', $event->event_id);
+                        }
+                        \Log::info('Airtable delete jobs dispatched for related events of barangay submission', [
+                            'submission_id' => $model->submission_id,
+                            'event_count' => $relatedEvents->count(),
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to queue Airtable delete jobs for related events', [
+                            'submission_id' => $model->submission_id,
+                            'id' => $model->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+
+                    \App\Jobs\SyncToAirtableJob::dispatch('barangay_submission', $model->id, 'delete', $model->submission_id);
+                    \Log::info('Airtable delete job dispatched for barangay submission', [
+                        'submission_id' => $model->submission_id,
+                        'id' => $model->id,
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to dispatch Airtable delete job for barangay submission', [
+                        'submission_id' => $model->submission_id,
+                        'id' => $model->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        });
     }
 
     public function region(): BelongsTo

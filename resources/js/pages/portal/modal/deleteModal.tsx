@@ -6,10 +6,11 @@ interface DeleteModalProps {
     onClose: () => void;
     barangayName?: string;
     submissionId?: number;
+    type?: 'submission' | 'event';
     onSuccess?: () => void;
 }
 
-export default function DeleteModal({ isOpen, onClose, barangayName = "Umali", submissionId, onSuccess }: DeleteModalProps) {
+export default function DeleteModal({ isOpen, onClose, barangayName = "Umali", submissionId, type = 'submission', onSuccess }: DeleteModalProps) {
     const [showSuccess, setShowSuccess] = useState(false);
     const [deleteReason, setDeleteReason] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +31,11 @@ export default function DeleteModal({ isOpen, onClose, barangayName = "Umali", s
         setError('');
         
         try {
-            await axios.delete(`/api/admin/submissions/${submissionId}`, {
+            const endpoint = type === 'event'
+                ? `/api/admin/events/${submissionId}`
+                : `/api/admin/submissions/${submissionId}`;
+
+            await axios.delete(endpoint, {
                 data: {
                     admin_notes: deleteReason.trim(),
                     _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''

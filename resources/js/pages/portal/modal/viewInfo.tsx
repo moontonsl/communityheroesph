@@ -680,6 +680,7 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData, user }: V
                 onClose={closeDeleteModal}
                 barangayName={barangayData.barangay_name}
                 submissionId={barangayData.id}
+                type="submission"
                 onSuccess={() => {
                     closeDeleteModal();
                     onClose(); // Close the main modal to refresh data

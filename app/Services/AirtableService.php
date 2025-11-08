@@ -291,6 +291,122 @@ class AirtableService
     }
 
     /**
+     * Delete a Barangay Submission in Airtable by our Submission ID
+     */
+    public function deleteBarangaySubmissionBySubmissionId(string $submissionId): array
+    {
+        try {
+            if (empty($submissionId)) {
+                return [
+                    'success' => false,
+                    'error' => 'Missing submission id',
+                ];
+            }
+
+            $recordId = $this->getBarangaySubmissionRecordIdBySubmissionId($submissionId);
+            if (!$recordId) {
+                Log::info('No Airtable record found to delete for barangay submission', [
+                    'submission_id' => $submissionId,
+                ]);
+                // Treat as success (already deleted/not present)
+                return ['success' => true];
+            }
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+            ])->delete($this->baseUrl . '/Barangay%20Submissions/' . $recordId);
+
+            if ($response->successful()) {
+                Log::info('Deleted barangay submission in Airtable', [
+                    'submission_id' => $submissionId,
+                    'airtable_record_id' => $recordId,
+                ]);
+                return ['success' => true];
+            }
+
+            Log::error('Failed to delete barangay submission in Airtable', [
+                'submission_id' => $submissionId,
+                'airtable_record_id' => $recordId,
+                'status' => $response->status(),
+                'response' => $response->body(),
+            ]);
+            return [
+                'success' => false,
+                'error' => 'Airtable API error: ' . $response->status(),
+                'response' => $response->body(),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Exception deleting barangay submission in Airtable', [
+                'submission_id' => $submissionId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Delete an Event in Airtable by our Event ID
+     */
+    public function deleteEventByEventId(string $eventId): array
+    {
+        try {
+            if (empty($eventId)) {
+                return [
+                    'success' => false,
+                    'error' => 'Missing event id',
+                ];
+            }
+
+            $recordId = $this->getEventRecordIdByEventId($eventId);
+            if (!$recordId) {
+                Log::info('No Airtable record found to delete for event', [
+                    'event_id' => $eventId,
+                ]);
+                // Treat as success (already deleted/not present)
+                return ['success' => true];
+            }
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+            ])->delete($this->baseUrl . '/Events/' . $recordId);
+
+            if ($response->successful()) {
+                Log::info('Deleted event in Airtable', [
+                    'event_id' => $eventId,
+                    'airtable_record_id' => $recordId,
+                ]);
+                return ['success' => true];
+            }
+
+            Log::error('Failed to delete event in Airtable', [
+                'event_id' => $eventId,
+                'airtable_record_id' => $recordId,
+                'status' => $response->status(),
+                'response' => $response->body(),
+            ]);
+            return [
+                'success' => false,
+                'error' => 'Airtable API error: ' . $response->status(),
+                'response' => $response->body(),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Exception deleting event in Airtable', [
+                'event_id' => $eventId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Format barangay submission data for Airtable
      */
     private function formatBarangaySubmissionForAirtable(BarangaySubmission $submission): array
