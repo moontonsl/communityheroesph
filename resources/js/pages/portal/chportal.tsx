@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import Header from '@/pages/partials/header';
 import ViewInfoModal from './modal/viewInfo';
@@ -426,8 +426,8 @@ export default function CHPortal({ submissions, events, allSubmissions, allEvent
     };
 
     const handleSuccess = () => {
-        // Refresh the page to get updated data
-        window.location.reload();
+        // Refresh only the data (not the whole page) using Inertia
+        router.reload({ only: ['submissions', 'events', 'allSubmissions', 'allEvents', 'submissionStats', 'eventStats', 'allSubmissionStats', 'allEventStats'] });
     };
 
     return (
@@ -1238,6 +1238,7 @@ export default function CHPortal({ submissions, events, allSubmissions, allEvent
                     onClose={closeModal}
                     barangayData={selectedBarangay}
                     user={user}
+                    onSuccess={handleSuccess}
                 />
             )}
             

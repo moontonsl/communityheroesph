@@ -42,6 +42,10 @@ export default function DeleteModal({ isOpen, onClose, barangayName = "Umali", s
                 }
             });
             
+            // Show success alert
+            const itemType = type === 'event' ? 'Event' : 'Barangay Application';
+            alert(`${itemType} has been successfully deleted from the database and Airtable!`);
+            
             setShowSuccess(true);
             if (onSuccess) onSuccess();
         } catch (err: any) {
@@ -133,10 +137,10 @@ export default function DeleteModal({ isOpen, onClose, barangayName = "Umali", s
                             </div>
                             
                             <h2 className="text-white text-lg font-bold mb-2">
-                                BARANGAY APPLICATION HAS BEEN
+                                {type === 'event' ? 'EVENT' : 'BARANGAY APPLICATION'} HAS BEEN
                             </h2>
                             <h3 className="text-white text-lg font-bold mb-6">
-                                DELETED FROM THE DATABASE!
+                                DELETED FROM THE DATABASE AND AIRTABLE!
                             </h3>
                             
                             <button 

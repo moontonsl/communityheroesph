@@ -83,9 +83,10 @@ interface ViewInfoModalProps {
     onClose: () => void;
     barangayData: BarangayData | null;
     user?: User;
+    onSuccess?: () => void;
 }
 
-export default function ViewInfoModal({ isOpen, onClose, barangayData, user }: ViewInfoModalProps) {
+export default function ViewInfoModal({ isOpen, onClose, barangayData, user, onSuccess }: ViewInfoModalProps) {
     const [isMoaModalOpen, setIsMoaModalOpen] = useState(false);
     const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
     const [approvalAction, setApprovalAction] = useState<'approve' | 'renew'>('approve');
@@ -683,7 +684,10 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData, user }: V
                 type="submission"
                 onSuccess={() => {
                     closeDeleteModal();
-                    onClose(); // Close the main modal to refresh data
+                    onClose(); // Close the main modal
+                    if (onSuccess) {
+                        onSuccess(); // Refresh the datatable
+                    }
                 }}
             />
         </>

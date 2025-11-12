@@ -72,31 +72,34 @@ class BarangaySubmission extends Model
                     try {
                         $relatedEvents = $model->events()->select('id', 'event_id')->get();
                         foreach ($relatedEvents as $event) {
-                            \App\Jobs\SyncToAirtableJob::dispatch('event', $event->id, 'delete', $event->event_id);
+                            // Delete immediately (synchronously) - no queue needed
+                            \App\Jobs\SyncToAirtableJob::dispatchSync('event', $event->id, 'delete', $event->event_id);
                         }
-                        \Log::info('Airtable delete jobs dispatched for related events of barangay submission', [
+                        \Log::info('Airtable delete executed immediately for related events of barangay submission', [
                             'submission_id' => $model->submission_id,
                             'event_count' => $relatedEvents->count(),
                         ]);
                     } catch (\Exception $e) {
-                        \Log::error('Failed to queue Airtable delete jobs for related events', [
+                        \Log::error('Failed to execute Airtable delete for related events', [
                             'submission_id' => $model->submission_id,
                             'id' => $model->id,
                             'error' => $e->getMessage()
                         ]);
                     }
 
-                    \App\Jobs\SyncToAirtableJob::dispatch('barangay_submission', $model->id, 'delete', $model->submission_id);
-                    \Log::info('Airtable delete job dispatched for barangay submission', [
+                    // Delete immediately (synchronously) - no queue needed
+                    \App\Jobs\SyncToAirtableJob::dispatchSync('barangay_submission', $model->id, 'delete', $model->submission_id);
+                    \Log::info('Airtable delete executed immediately for barangay submission', [
                         'submission_id' => $model->submission_id,
                         'id' => $model->id,
                     ]);
                 } catch (\Exception $e) {
-                    \Log::error('Failed to dispatch Airtable delete job for barangay submission', [
+                    \Log::error('Failed to execute Airtable delete for barangay submission', [
                         'submission_id' => $model->submission_id,
                         'id' => $model->id,
                         'error' => $e->getMessage()
                     ]);
+                    // Don't fail the main operation if Airtable sync fails
                 }
             }
         });

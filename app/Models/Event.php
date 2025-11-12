@@ -65,17 +65,19 @@ class Event extends Model
         static::deleting(function ($model) {
             if (config('airtable.sync.enabled', true)) {
                 try {
-                    \App\Jobs\SyncToAirtableJob::dispatch('event', $model->id, 'delete', $model->event_id);
-                    \Log::info('Airtable delete job dispatched for event', [
+                    // Delete immediately (synchronously) - no queue needed
+                    \App\Jobs\SyncToAirtableJob::dispatchSync('event', $model->id, 'delete', $model->event_id);
+                    \Log::info('Airtable delete executed immediately for event', [
                         'event_id' => $model->event_id,
                         'id' => $model->id,
                     ]);
                 } catch (\Exception $e) {
-                    \Log::error('Failed to dispatch Airtable delete job for event', [
+                    \Log::error('Failed to execute Airtable delete for event', [
                         'event_id' => $model->event_id,
                         'id' => $model->id,
                         'error' => $e->getMessage()
                     ]);
+                    // Don't fail the main operation if Airtable sync fails
                 }
             }
         });
