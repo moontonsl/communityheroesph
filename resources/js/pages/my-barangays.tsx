@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '@/lib/axios';
 import Header from '@/pages/partials/header';
 
 interface BarangaySubmission {

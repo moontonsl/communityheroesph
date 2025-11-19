@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import axios from '@/lib/axios';
 import Header from '@/pages/partials/header';
 
 interface EventData {
@@ -410,28 +411,16 @@ export default function EventReportingShow({ report, user }: EventReportingShowP
                                             onClick={() => {
                                                 if (confirm('Are you sure you want to submit this report? Once submitted, it cannot be edited.')) {
                                                     console.log('Submitting report:', report.id);
-                                                    // Submit report
-                                                    fetch(`/event-reporting/${report.id}/submit`, {
-                                                        method: 'POST',
-                                                        headers: {
-                                                            'Content-Type': 'application/json',
-                                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                                                        },
-                                                    })
-                                                    .then(response => {
-                                                        console.log('Submit response status:', response.status);
-                                                        if (response.ok) {
+                                                    // CSRF token is automatically added by configured axios instance
+                                                    axios.post(`/event-reporting/${report.id}/submit`)
+                                                        .then(() => {
                                                             console.log('Report submitted successfully');
                                                             window.location.reload();
-                                                        } else {
-                                                            console.error('Submit failed:', response.statusText);
-                                                            alert('Failed to submit report. Please try again.');
-                                                        }
-                                                    })
-                                                    .catch(error => {
-                                                        console.error('Submit error:', error);
-                                                        alert('Error submitting report. Please try again.');
-                                                    });
+                                                        })
+                                                        .catch(error => {
+                                                            console.error('Submit error:', error);
+                                                            alert('Error submitting report. Please try again.');
+                                                        });
                                                 }
                                             }}
                                             className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"

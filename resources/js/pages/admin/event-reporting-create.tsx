@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState, useRef } from 'react';
+import axios from '@/lib/axios';
 import Header from '@/pages/partials/header';
 
 interface EventData {
@@ -66,16 +67,15 @@ export default function EventReportingCreate({ events, user }: EventReportingCre
         try {
             const formData = new FormData();
             formData.append('post_event_file', file);
+            // CSRF token is automatically added by configured axios instance
 
-            const response = await fetch('/api/upload-post-event-file', {
-                method: 'POST',
-                body: formData,
+            const response = await axios.post('/api/upload-post-event-file', formData, {
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Content-Type': 'multipart/form-data',
                 },
             });
 
-            const result = await response.json();
+            const result = response.data;
 
             if (result.success) {
                 setUploadedFile({

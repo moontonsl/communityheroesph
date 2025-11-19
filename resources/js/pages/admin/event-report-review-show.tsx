@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import axios from '@/lib/axios';
 import AppLayout from '@/layouts/app-layout';
 import { FileText, Calendar, MapPin, Users, Download, CheckCircle, Clock, AlertCircle, DollarSign, Gem, User } from 'lucide-react';
 
@@ -136,73 +137,56 @@ export default function EventReportReviewShow({ report, user, flash }: Props) {
 
     const handleReview = () => {
         if (confirm('Are you sure you want to review this report?')) {
-            fetch(`/event-report-review/${report.id}/review`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-                body: JSON.stringify({
-                    admin_notes: adminNotes
-                })
+            // CSRF token is automatically added by configured axios instance
+            axios.post(`/event-report-review/${report.id}/review`, {
+                admin_notes: adminNotes
             }).then(() => {
                 window.location.reload();
+            }).catch((error) => {
+                console.error('Review error:', error);
+                alert('Failed to review report. Please try again.');
             });
         }
     };
 
     const handleApprove = () => {
         if (confirm('Are you sure you want to approve this report?')) {
-            fetch(`/event-report-review/${report.id}/approve`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-                body: JSON.stringify({
-                    admin_notes: adminNotes
-                })
+            // CSRF token is automatically added by configured axios instance
+            axios.post(`/event-report-review/${report.id}/approve`, {
+                admin_notes: adminNotes
             }).then(() => {
                 window.location.reload();
+            }).catch((error) => {
+                console.error('Approve error:', error);
+                alert('Failed to approve report. Please try again.');
             });
         }
     };
 
     const handleFirstClearance = () => {
         if (confirm('Are you sure you want to mark this report as first cleared?')) {
-            fetch(`/event-report-review/${report.id}/first-clearance`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                }
-            }).then(() => {
-                window.location.reload();
-            });
+            // CSRF token is automatically added by configured axios instance
+            axios.post(`/event-report-review/${report.id}/first-clearance`)
+                .then(() => {
+                    window.location.reload();
+                }).catch((error) => {
+                    console.error('First clearance error:', error);
+                    alert('Failed to complete first clearance. Please try again.');
+                });
         }
     };
 
     const handleFinalClearance = () => {
         if (confirm('Are you sure you want to mark this report as final cleared?')) {
             console.log('Final clearance request started for report:', report.id);
-            fetch(`/event-report-review/${report.id}/final-clearance`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                }
-            }).then((response) => {
-                console.log('Final clearance response:', response.status, response.statusText);
-                if (response.ok) {
+            // CSRF token is automatically added by configured axios instance
+            axios.post(`/event-report-review/${report.id}/final-clearance`)
+                .then(() => {
                     window.location.reload();
-                } else {
-                    console.error('Final clearance failed:', response);
-                    alert('Failed to complete final clearance. Please try again.');
-                }
-            }).catch((error) => {
-                console.error('Final clearance error:', error);
-                alert('Error completing final clearance. Please try again.');
-            });
+                }).catch((error) => {
+                    console.error('Final clearance error:', error);
+                    alert('Error completing final clearance. Please try again.');
+                });
         }
     };
 
@@ -216,31 +200,20 @@ export default function EventReportReviewShow({ report, user, flash }: Props) {
             status: report.status
         });
         
-        fetch(`/event-report-review/${report.id}/financials`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-            },
-            body: JSON.stringify({
-                ...financialData,
-                _method: 'PUT'
-            })
+        // CSRF token is automatically added by configured axios instance
+        axios.put(`/event-report-review/${report.id}/financials`, {
+            ...financialData
         }).then((response) => {
-            console.log('Mark Cleared response:', response.status, response.statusText);
+            console.log('Financial update response:', response.status, response.statusText);
             setIsUpdatingFinancials(false);
             
-            // Don't reload immediately - show response first
-            if (response.ok) {
-                alert('Financial information updated successfully! Click OK to reload the page.');
-                window.location.reload();
-            } else {
-                alert('Failed to update financial information. Check console for details.');
-            }
+            // Axios automatically handles success responses (status 200-299)
+            alert('Financial information updated successfully! Click OK to reload the page.');
+            window.location.reload();
         }).catch((error) => {
-            console.error('Mark Cleared error:', error);
+            console.error('Financial update error:', error);
             setIsUpdatingFinancials(false);
-            alert('Error updating financial information. Check console for details.');
+            alert('Error updating financial information. Please try again.');
         });
     };
 

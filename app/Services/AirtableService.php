@@ -24,35 +24,53 @@ class AirtableService
 
     /**
      * Sync barangay submission to Airtable
+     * Updates existing record if found, otherwise creates new one
      */
     public function syncBarangaySubmission(BarangaySubmission $submission): array
     {
         try {
             $airtableData = $this->formatBarangaySubmissionForAirtable($submission);
             
+            // Check if record already exists in Airtable
+            $recordId = $this->getBarangaySubmissionRecordIdBySubmissionId($submission->submission_id);
+            
             // Debug: Log the data being sent
             Log::info('Sending barangay submission to Airtable', [
                 'submission_id' => $submission->submission_id,
+                'existing_record_id' => $recordId,
+                'action' => $recordId ? 'update' : 'create',
                 'airtable_data' => $airtableData
             ]);
             
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/Barangay%20Submissions', [
-                'fields' => $airtableData
-            ]);
+            if ($recordId) {
+                // Update existing record
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type' => 'application/json',
+                ])->patch($this->baseUrl . '/Barangay%20Submissions/' . $recordId, [
+                    'fields' => $airtableData
+                ]);
+            } else {
+                // Create new record
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type' => 'application/json',
+                ])->post($this->baseUrl . '/Barangay%20Submissions', [
+                    'fields' => $airtableData
+                ]);
+            }
 
             if ($response->successful()) {
                 $result = $response->json();
                 Log::info('Barangay submission synced to Airtable', [
                     'submission_id' => $submission->submission_id,
-                    'airtable_id' => $result['id'] ?? null
+                    'airtable_id' => $result['id'] ?? $recordId,
+                    'action' => $recordId ? 'updated' : 'created'
                 ]);
                 
                 return [
                     'success' => true,
-                    'airtable_id' => $result['id'] ?? null,
+                    'airtable_id' => $result['id'] ?? $recordId,
                     'data' => $result
                 ];
             } else {
@@ -84,6 +102,7 @@ class AirtableService
 
     /**
      * Sync event to Airtable
+     * Updates existing record if found, otherwise creates new one
      */
     public function syncEvent(Event $event, string $action = 'create'): array
     {
@@ -98,29 +117,28 @@ class AirtableService
                 }
             }
 
-            // Decide create vs update
-            if ($action === 'update') {
-                $recordId = $this->getEventRecordIdByEventId($event->event_id);
-                if ($recordId) {
-                    $response = Http::withHeaders([
-                        'Authorization' => 'Bearer ' . $this->apiKey,
-                        'Content-Type' => 'application/json',
-                    ])->patch($this->baseUrl . '/Events/' . $recordId, [
-                        'fields' => $airtableData
-                    ]);
-                } else {
-                    // If not found, fall back to create to ensure Airtable has it
-                    Log::warning('Event record not found in Airtable, creating instead of updating', [
-                        'event_id' => $event->event_id
-                    ]);
-                    $response = Http::withHeaders([
-                        'Authorization' => 'Bearer ' . $this->apiKey,
-                        'Content-Type' => 'application/json',
-                    ])->post($this->baseUrl . '/Events', [
-                        'fields' => $airtableData
-                    ]);
-                }
+            // Always check if record exists first (regardless of action parameter)
+            // This prevents duplicates and ensures we update existing records
+            $recordId = $this->getEventRecordIdByEventId($event->event_id);
+            
+            // Debug: Log the data being sent
+            Log::info('Sending event to Airtable', [
+                'event_id' => $event->event_id,
+                'existing_record_id' => $recordId,
+                'action' => $recordId ? 'update' : 'create',
+                'airtable_data' => $airtableData
+            ]);
+
+            if ($recordId) {
+                // Update existing record
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type' => 'application/json',
+                ])->patch($this->baseUrl . '/Events/' . $recordId, [
+                    'fields' => $airtableData
+                ]);
             } else {
+                // Create new record
                 $response = Http::withHeaders([
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
@@ -133,7 +151,8 @@ class AirtableService
                 $result = $response->json();
                 Log::info('Event synced to Airtable', [
                     'event_id' => $event->event_id,
-                    'airtable_id' => $result['id'] ?? null
+                    'airtable_id' => $result['id'] ?? $recordId,
+                    'action' => $recordId ? 'updated' : 'created'
                 ]);
                 
                 return [

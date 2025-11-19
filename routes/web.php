@@ -4,6 +4,30 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+Route::get('/csrf/refresh', function (Request $request) {
+    // Ensure session is started
+    $request->session()->start();
+    
+    return response()->json([
+        'token' => csrf_token(),
+        'session_id' => $request->session()->getId(),
+        'has_session' => $request->session()->has('_token'),
+    ]);
+})->name('csrf.refresh');
+
+// Test endpoint to check if session cookies are working
+Route::get('/test-session', function (Request $request) {
+    $request->session()->start();
+    $request->session()->put('test', 'session_works');
+    
+    return response()->json([
+        'session_id' => $request->session()->getId(),
+        'test_value' => $request->session()->get('test'),
+        'csrf_token' => csrf_token(),
+        'cookies_sent' => $request->cookie('ch2_session') ? 'yes' : 'no',
+    ]);
+})->name('test.session');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', [App\Http\Controllers\HomepageController::class, 'index'])->name('home');
     Route::get('/homepage', [App\Http\Controllers\HomepageController::class, 'index'])->name('homepage');
@@ -566,24 +590,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'status' => 'PENDING'
             ]);
             
-			// Sync to Airtable if enabled
+			// Sync to Airtable if enabled - always sync immediately for initial creation
 			if (config('airtable.sync.enabled', true)) {
 				try {
-					if (config('airtable.sync.immediate', false)) {
-						\App\Jobs\SyncToAirtableJob::dispatchSync('barangay_submission', $submission->id, 'create');
+					// Call service directly to avoid queue/CSRF issues
+					$airtableService = app(\App\Services\AirtableService::class);
+					$syncResult = $airtableService->syncBarangaySubmission($submission);
+					
+					if ($syncResult['success']) {
 						\Log::info('Airtable sync executed immediately for barangay submission', [
 							'submission_id' => $submission->submission_id,
-							'id' => $submission->id
+							'id' => $submission->id,
+							'airtable_id' => $syncResult['airtable_id'] ?? null
 						]);
 					} else {
-						\App\Jobs\SyncToAirtableJob::dispatch('barangay_submission', $submission->id, 'create');
-						\Log::info('Airtable sync job dispatched for barangay submission', [
+						\Log::error('Airtable sync failed for barangay submission', [
 							'submission_id' => $submission->submission_id,
-							'id' => $submission->id
+							'id' => $submission->id,
+							'error' => $syncResult['error'] ?? 'Unknown error'
 						]);
 					}
 				} catch (\Exception $e) {
-					\Log::error('Failed to queue/execute Airtable sync', [
+					\Log::error('Failed to execute Airtable sync', [
 						'submission_id' => $submission->submission_id,
 						'error' => $e->getMessage()
 					]);
@@ -683,24 +711,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'status' => $initialStatus
             ]);
             
-			// Sync to Airtable if enabled
+			// Sync to Airtable if enabled - always sync immediately for initial creation
 			if (config('airtable.sync.enabled', true)) {
 				try {
-					if (config('airtable.sync.immediate', false)) {
-						\App\Jobs\SyncToAirtableJob::dispatchSync('event', $event->id, 'create');
+					// Call service directly to avoid queue/CSRF issues
+					$airtableService = app(\App\Services\AirtableService::class);
+					$syncResult = $airtableService->syncEvent($event, 'create');
+					
+					if ($syncResult['success']) {
 						\Log::info('Airtable sync executed immediately for event', [
 							'event_id' => $event->event_id,
-							'id' => $event->id
+							'id' => $event->id,
+							'airtable_id' => $syncResult['airtable_id'] ?? null
 						]);
 					} else {
-						\App\Jobs\SyncToAirtableJob::dispatch('event', $event->id, 'create');
-						\Log::info('Airtable sync job dispatched for event', [
+						\Log::error('Airtable sync failed for event', [
 							'event_id' => $event->event_id,
-							'id' => $event->id
+							'id' => $event->id,
+							'error' => $syncResult['error'] ?? 'Unknown error'
 						]);
 					}
 				} catch (\Exception $e) {
-					\Log::error('Failed to queue/execute Airtable sync for event', [
+					\Log::error('Failed to execute Airtable sync for event', [
 						'event_id' => $event->event_id,
 						'error' => $e->getMessage()
 					]);
@@ -756,6 +788,17 @@ Route::middleware(['auth'])->group(function () {
     // Approve submission
     Route::post('/api/admin/submissions/{id}/approve', function ($id) {
         $request = request();
+        
+        // Debug CSRF token
+        \Log::info('Approval request received', [
+            'session_id' => $request->session()->getId(),
+            'has_session' => $request->hasSession(),
+            'token_from_header' => $request->header('X-CSRF-TOKEN'),
+            'token_from_body' => $request->input('_token'),
+            'session_token' => $request->session()->token(),
+            'cookies' => $request->cookies->all(),
+        ]);
+        
         $submission = \App\Models\BarangaySubmission::findOrFail($id);
         $user = auth()->user();
         $userRole = $user->role->slug;

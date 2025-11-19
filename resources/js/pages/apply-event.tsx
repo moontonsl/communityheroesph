@@ -1,5 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import axios from '@/lib/axios';
 import Header from '@/pages/partials/header';
 import { SharedData } from '@/types';
 
@@ -77,27 +78,16 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                 console.log('Uploading proposal file:', formData.proposalFile.name);
                 const formDataFile = new FormData();
                 formDataFile.append('proposal_file', formData.proposalFile);
+                // CSRF token is automatically added by configured axios instance
                 
-                const uploadResponse = await fetch('/api/upload-proposal', {
-                    method: 'POST',
+                const uploadResponse = await axios.post('/api/upload-proposal', formDataFile, {
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                        'Accept': 'application/json'
+                        'Content-Type': 'multipart/form-data',
                     },
-                    body: formDataFile
                 });
                 
                 console.log('Upload response status:', uploadResponse.status);
-                
-                // Check if response is JSON
-                const uploadContentType = uploadResponse.headers.get('content-type');
-                if (!uploadContentType || !uploadContentType.includes('application/json')) {
-                    const uploadText = await uploadResponse.text();
-                    console.error('Non-JSON upload response:', uploadText);
-                    throw new Error('File upload failed. Please check if you are logged in.');
-                }
-                
-                const uploadResult = await uploadResponse.json();
+                const uploadResult = uploadResponse.data;
                 console.log('Upload result:', uploadResult);
                 
                 if (!uploadResult.success) {
@@ -129,28 +119,12 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
             };
             
             console.log('Submitting event data:', eventData);
+            // CSRF token is automatically added by configured axios instance
             
-            const response = await fetch('/api/apply-event', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(eventData)
-            });
-
+            const response = await axios.post('/api/apply-event', eventData);
+            
             console.log('Event submission response status:', response.status);
-            
-            // Check if response is JSON
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Non-JSON response:', text);
-                throw new Error('Server returned non-JSON response. Please check if you are logged in.');
-            }
-            
-            const result = await response.json();
+            const result = response.data;
             console.log('Event submission result:', result);
 
             if (result.success) {

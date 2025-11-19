@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axios from '@/lib/axios';
 
 interface ApprovalModalProps {
     isOpen: boolean;
@@ -97,7 +97,7 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
                 });
                 const formData = new FormData();
                 formData.append('moa_file', moaFile);
-                formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+                // CSRF token is automatically added by configured axios instance
                 
                 const uploadResponse = await axios.post('/api/upload-moa', formData, {
                     headers: {
@@ -140,22 +140,26 @@ export default function ApprovalModal({ isOpen, onClose, barangayName = "Umali",
                 userRole,
                 type
             });
-                
-            await axios.post(endpoint, {
+            
+            // API routes don't need CSRF tokens - use axios directly
+            const response = await axios.post(endpoint, {
                 admin_notes: action === 'renew' 
                     ? 'MOA renewed for 1 year'
                     : userRole === 'community-lead'
                         ? `${type === 'event' ? 'Event' : 'Application'} pre-approved by Community Lead`
                         : `${type === 'event' ? 'Event' : 'Application'} approved by Super Admin with signed MOA`,
                 moa_file_path: moaFilePath,
-                moa_file_name: moaFileName,
-                _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                moa_file_name: moaFileName
             });
+            
+            const result = response.data;
             
             setShowSuccess(true);
             if (onSuccess) onSuccess();
         } catch (err: any) {
-            setError(err.response?.data?.message || `Failed to approve ${type}`);
+            const errorMessage = err.message || (err.response?.data?.message) || `Failed to approve ${type}`;
+            setError(errorMessage);
+            console.error('Approval error:', err);
         } finally {
             setIsLoading(false);
         }

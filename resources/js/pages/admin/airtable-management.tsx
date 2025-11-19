@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import Header from '@/pages/partials/header';
-import axios from 'axios';
+import axios from '@/lib/axios';
 
 interface AirtableStatus {
     enabled: boolean;

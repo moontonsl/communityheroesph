@@ -1,6 +1,6 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import axios from '@/lib/axios';
 import Header from '@/pages/partials/header';
 import { SharedData } from '@/types';
 
@@ -275,7 +275,7 @@ export default function RegisterBarangay({ preFillData }: RegisterBarangayProps 
         try {
             const formData = new FormData();
             formData.append('moa_file', file);
-            formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+            // CSRF token is automatically added by configured axios instance
             
             const response = await axios.post('/api/upload-moa', formData, {
                 headers: {
@@ -393,6 +393,14 @@ export default function RegisterBarangay({ preFillData }: RegisterBarangayProps 
             return;
         }
         
+        // Ensure CSRF token is available before submitting
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!csrfToken) {
+            console.warn('CSRF token not found, waiting for page to fully load...');
+            alert('Page is still loading. Please wait a moment and try again.');
+            return;
+        }
+        
         try {
             // Upload file first
             const uploadResult = await handleFileUpload(formData.moaFile);
@@ -450,11 +458,27 @@ export default function RegisterBarangay({ preFillData }: RegisterBarangayProps 
                 setMunicipalitySearch('');
                 setBarangaySearch('');
             } else {
-                alert('Error submitting registration. Please try again.');
+                const errorMsg = response.data?.message || 'Error submitting registration. Please try again.';
+                alert(errorMsg);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error submitting form:', error);
-            alert('Error submitting registration. Please try again.');
+            
+            // Check if it's a validation error
+            if (error.response?.status === 422) {
+                const errors = error.response.data?.errors;
+                if (errors) {
+                    const errorMessages = Object.values(errors).flat().join('\n');
+                    alert(`Validation errors:\n${errorMessages}`);
+                } else {
+                    alert(error.response.data?.message || 'Validation failed. Please check your input.');
+                }
+                return;
+            }
+            
+            // Show specific error message if available
+            const errorMsg = error.response?.data?.message || error.message || 'Error submitting registration. Please try again.';
+            alert(errorMsg);
         }
     };
 

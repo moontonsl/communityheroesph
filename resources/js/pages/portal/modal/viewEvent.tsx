@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from '@/lib/axios';
 import ApprovalModal from './approvalModal';
 import ReturnModal from './returnModal';
 import DeleteModal from './deleteModal';
@@ -121,20 +122,13 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess, 
         if (!reason) return;
 
         try {
-            const response = await fetch(`/api/admin/events/${eventData?.id}/reject`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    rejection_reason: reason,
-                    admin_notes: 'Event rejected by Super Admin A'
-                })
+            // CSRF token is automatically added by configured axios instance
+            const response = await axios.post(`/api/admin/events/${eventData?.id}/reject`, {
+                rejection_reason: reason,
+                admin_notes: 'Event rejected by Super Admin A'
             });
 
-            const result = await response.json();
+            const result = response.data;
             
             if (result.success) {
                 alert('Event rejected successfully!');

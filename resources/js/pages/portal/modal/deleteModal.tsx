@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axios from '@/lib/axios';
 
 interface DeleteModalProps {
     isOpen: boolean;
@@ -35,10 +35,10 @@ export default function DeleteModal({ isOpen, onClose, barangayName = "Umali", s
                 ? `/api/admin/events/${submissionId}`
                 : `/api/admin/submissions/${submissionId}`;
 
+            // CSRF token is automatically added by configured axios instance
             await axios.delete(endpoint, {
                 data: {
-                    admin_notes: deleteReason.trim(),
-                    _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    admin_notes: deleteReason.trim()
                 }
             });
             

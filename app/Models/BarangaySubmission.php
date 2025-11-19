@@ -408,14 +408,23 @@ class BarangaySubmission extends Model
     {
         if (config('airtable.sync.enabled', true)) {
             try {
-                \App\Jobs\SyncToAirtableJob::dispatch('barangay_submission', $this->id, 'update');
-                \Log::info('Airtable sync job dispatched for barangay submission update', [
-                    'submission_id' => $this->submission_id,
-                    'id' => $this->id,
-                    'status' => $this->status
-                ]);
+                if (config('airtable.sync.immediate', false)) {
+                    \App\Jobs\SyncToAirtableJob::dispatchSync('barangay_submission', $this->id, 'update');
+                    \Log::info('Airtable sync executed immediately for barangay submission update', [
+                        'submission_id' => $this->submission_id,
+                        'id' => $this->id,
+                        'status' => $this->status
+                    ]);
+                } else {
+                    \App\Jobs\SyncToAirtableJob::dispatch('barangay_submission', $this->id, 'update');
+                    \Log::info('Airtable sync job dispatched for barangay submission update', [
+                        'submission_id' => $this->submission_id,
+                        'id' => $this->id,
+                        'status' => $this->status
+                    ]);
+                }
             } catch (\Exception $e) {
-                \Log::error('Failed to dispatch Airtable sync job for update', [
+                \Log::error('Failed to dispatch/execute Airtable sync job for update', [
                     'submission_id' => $this->submission_id,
                     'id' => $this->id,
                     'error' => $e->getMessage()

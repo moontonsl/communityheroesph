@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axios from '@/lib/axios';
 
 interface ReturnModalProps {
     isOpen: boolean;
@@ -35,10 +35,10 @@ export default function ReturnModal({ isOpen, onClose, barangayName = "Umali", s
                 ? `/api/admin/events/${submissionId}/reject`
                 : `/api/admin/submissions/${submissionId}/reject`;
                 
+            // CSRF token is automatically added by configured axios instance
             await axios.post(endpoint, {
                 rejection_reason: returnReason.trim(),
-                admin_notes: `${type === 'event' ? 'Event' : 'Application'} rejected by admin`,
-                _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                admin_notes: `${type === 'event' ? 'Event' : 'Application'} rejected by admin`
             });
                 
             setShowSuccess(true);

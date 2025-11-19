@@ -19,6 +19,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        // Exclude API routes from CSRF protection since they're already authenticated
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'api/register-barangay',
+            'api/apply-event',
+            'api/upload-*',
+            'api/admin/*',
+        ]);
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
