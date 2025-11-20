@@ -42,7 +42,6 @@ export default function ReturnModal({ isOpen, onClose, barangayName = "Umali", s
             });
                 
             setShowSuccess(true);
-            if (onSuccess) onSuccess();
         } catch (err: any) {
             setError(err.response?.data?.message || `Failed to reject ${type}`);
         } finally {
@@ -54,6 +53,7 @@ export default function ReturnModal({ isOpen, onClose, barangayName = "Umali", s
         setShowSuccess(false);
         setReturnReason('');
         onClose();
+        if (onSuccess) onSuccess();
     };
 
     const handleClose = () => {
@@ -121,19 +121,22 @@ export default function ReturnModal({ isOpen, onClose, barangayName = "Umali", s
                 ) : (
                     <div className="bg-gray-800 rounded-lg shadow-2xl max-w-md w-full p-6">
                         <div className="text-center">
-                            {/* Warning Icon */}
-                            <div className="w-16 h-16 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            {/* Success Icon */}
+                            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
                             
                             <h2 className="text-white text-lg font-bold mb-2">
                                 {type === 'event' ? 'EVENT APPLICATION' : 'BARANGAY APPLICATION'} HAS BEEN
                             </h2>
-                            <h3 className="text-white text-lg font-bold mb-6">
-                                REJECTED!
+                            <h3 className="text-white text-lg font-bold mb-2">
+                                REJECTED SUCCESSFULLY
                             </h3>
+                            <p className="text-gray-300 text-sm mb-6">
+                                The rejection reason has been recorded for this entry.
+                            </p>
                             
                             <button 
                                 onClick={handleBackToServices}

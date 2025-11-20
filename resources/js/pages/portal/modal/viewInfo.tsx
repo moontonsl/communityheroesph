@@ -660,6 +660,9 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData, user, onS
                 onSuccess={() => {
                     closeApprovalModal();
                     onClose(); // Close the main modal to refresh data
+                    if (onSuccess) {
+                        onSuccess(); // Refresh datatable
+                    }
                 }}
             />
 
@@ -670,8 +673,10 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData, user, onS
                 barangayName={barangayData.barangay_name}
                 submissionId={barangayData.id}
                 onSuccess={() => {
-                    closeReturnModal();
                     onClose(); // Close the main modal to refresh data
+                    if (onSuccess) {
+                        onSuccess();
+                    }
                 }}
             />
 
@@ -683,7 +688,6 @@ export default function ViewInfoModal({ isOpen, onClose, barangayData, user, onS
                 submissionId={barangayData.id}
                 type="submission"
                 onSuccess={() => {
-                    closeDeleteModal();
                     onClose(); // Close the main modal
                     if (onSuccess) {
                         onSuccess(); // Refresh the datatable

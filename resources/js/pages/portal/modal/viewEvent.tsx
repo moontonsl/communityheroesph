@@ -470,7 +470,11 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess, 
                 submissionId={eventData.id}
                 type="event"
                 userRole={user?.role?.slug}
-                onSuccess={onSuccess}
+                onSuccess={() => {
+                    closeApprovalModal();
+                    onClose();
+                    onSuccess?.();
+                }}
             />
 
             {/* Return Modal */}
@@ -480,7 +484,10 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess, 
                 barangayName={eventData.barangaySubmission?.barangay_name || (eventData as any).barangay_submission?.barangay_name || 'Unknown'}
                 submissionId={eventData.id}
                 type="event"
-                onSuccess={onSuccess}
+                onSuccess={() => {
+                    onClose();
+                    onSuccess?.();
+                }}
             />
 
             {/* Delete Modal */}
@@ -491,9 +498,8 @@ export default function ViewEventModal({ isOpen, onClose, eventData, onSuccess, 
                 submissionId={eventData.id}
                 type="event"
                 onSuccess={() => {
-                    closeDeleteModal();
-                    onSuccess?.();
                     onClose();
+                    onSuccess?.();
                 }}
             />
         </>
