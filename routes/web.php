@@ -188,11 +188,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                                    ->where('reviewed_by', $user->id);
                       });
             });
-        } elseif ($userRole === 'super-admin-a' || $userRole === 'super-admin') {
-            // Super Admin A and Super Admin only see PRE_APPROVED submissions for final approval
-            $submissionsQuery->where('status', 'PRE_APPROVED');
-        } elseif ($userRole === 'super-admin-b') {
-            // Super Admin B sees all submissions
+        } elseif (in_array($userRole, ['super-admin-a', 'super-admin-b', 'super-admin'])) {
+            // All Super Admins see all submissions
             // No additional filtering needed
         }
         
@@ -230,11 +227,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                                    ->where('reviewed_by', $user->id);
                       });
             });
-        } elseif ($userRole === 'super-admin-a' || $userRole === 'super-admin') {
-            // Super Admin A and Super Admin only see PRE_APPROVED events for final approval
-            $eventsQuery->where('status', 'PRE_APPROVED');
-        } elseif ($userRole === 'super-admin-b') {
-            // Super Admin B sees all events
+        } elseif (in_array($userRole, ['super-admin-a', 'super-admin-b', 'super-admin'])) {
+            // All Super Admins see all events
             // No additional filtering needed
         }
         
@@ -267,10 +261,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                                    ->where('reviewed_by', $user->id);
                       });
             });
-        } elseif ($userRole === 'super-admin-a' || $userRole === 'super-admin') {
-            $submissionStatsQuery->where('status', 'PRE_APPROVED');
-        } elseif ($userRole === 'super-admin-b') {
-            // Super Admin B sees all submissions - no filtering needed
+        } elseif (in_array($userRole, ['super-admin-a', 'super-admin-b', 'super-admin'])) {
+            // All Super Admins see all submissions - no filtering needed
         }
         
         $submissionStats = [
@@ -313,10 +305,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                                    ->where('reviewed_by', $user->id);
                       });
             });
-        } elseif ($userRole === 'super-admin-a' || $userRole === 'super-admin') {
-            $eventStatsQuery->where('status', 'PRE_APPROVED');
-        } elseif ($userRole === 'super-admin-b') {
-            // Super Admin B sees all events - no filtering needed
+        } elseif (in_array($userRole, ['super-admin-a', 'super-admin-b', 'super-admin'])) {
+            // All Super Admins see all events - no filtering needed
         }
         
         $eventStats = [
