@@ -33,6 +33,7 @@ export default function Header() {
     const transactionSubLinks = [
         { name: 'Register Barangay', href: '/registerbarangay', icon: Building },
         { name: 'Apply Event', href: '/apply-event', icon: Calendar },
+        { name: 'Event Reporting', href: '/event-reporting', icon: FileText },
     ];
 
     // Add admin links if user is admin
@@ -137,14 +138,14 @@ export default function Header() {
                                     {/* Transaction Dropdown Menu */}
                                     {isTransactionDropdownOpen && (
                                         <div className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                                            <Link
+                                            {/* <Link
                                                 href="/Transaction"
                                                 onClick={() => setIsTransactionDropdownOpen(false)}
                                                 className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                                             >
                                                 <BarChart3 className="w-4 h-4" />
                                                 <span>Transaction</span>
-                                            </Link>
+                                            </Link> */}
                                             {transactionSubLinks.map((link) => {
                                                 const Icon = link.icon;
                                                 return (

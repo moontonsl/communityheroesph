@@ -52,12 +52,45 @@ Route::middleware(['auth', 'verified', 'role:barangays.apply'])->group(function 
 // Event Application Routes - Area Admin, Community Lead, Super Admin A
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/apply-event', function () {
-        // Get approved barangays for the current user
-        $approvedBarangays = \App\Models\BarangaySubmission::where('status', 'APPROVED')
-            ->with(['region', 'province', 'municipality', 'barangay'])
-            ->get();
+        $user = auth()->user()->load('role');
+        $userRole = $user->role->slug ?? '';
+        
+        // Get approved barangays for the current user based on role
+        $approvedBarangaysQuery = \App\Models\BarangaySubmission::where('status', 'APPROVED')
+            ->with(['region', 'province', 'municipality', 'barangay', 'assignedUser']);
+        
+        // Filter based on user role
+        if ($userRole === 'area-admin') {
+            // Area Admin: Only see barangays they personally applied for and were approved
+            $approvedBarangaysQuery->where('assigned_user_id', $user->id);
+        } elseif ($userRole === 'community-lead') {
+            // Community Lead: See all approved barangays under Area Admins assigned to them
+            // An Area Admin is "assigned" to a Community Lead if the Community Lead has reviewed
+            // at least one submission from that Area Admin
+            $assignedAreaAdminIds = \App\Models\BarangaySubmission::where('reviewed_by', $user->id)
+                ->whereNotNull('assigned_user_id')
+                ->distinct()
+                ->pluck('assigned_user_id')
+                ->toArray();
+            
+            // Only filter if there are assigned Area Admins, otherwise return empty
+            if (!empty($assignedAreaAdminIds)) {
+                $approvedBarangaysQuery->whereIn('assigned_user_id', $assignedAreaAdminIds);
+            } else {
+                $approvedBarangaysQuery->whereRaw('1 = 0'); // Return no results if no assigned Area Admins
+            }
+        } elseif (in_array($userRole, ['super-admin-a', 'super-admin-b', 'super-admin'])) {
+            // Super Admins can see all approved barangays
+            // No additional filtering needed
+        } else {
+            // For other roles, return empty array
+            $approvedBarangaysQuery->whereRaw('1 = 0');
+        }
+        
+        $approvedBarangays = $approvedBarangaysQuery->get();
         
         \Log::info('=== APPLY EVENT ROUTE DEBUG ===');
+        \Log::info('User role: ' . $userRole);
         \Log::info('Approved barangays count: ' . $approvedBarangays->count());
         \Log::info('Approved barangays data: ', $approvedBarangays->toArray());
         \Log::info('=== END ROUTE DEBUG ===');
@@ -681,13 +714,60 @@ Route::middleware(['auth', 'verified'])->group(function () {
 			}
             
             // Determine initial status based on user role
-            $user = auth()->user();
+            $user = auth()->user()->load('role');
+            $userRole = $user->role->slug ?? '';
             $initialStatus = 'PENDING'; // Default for Area Admin
             
-            if ($user->role && $user->role->slug === 'community-lead') {
+            if ($userRole === 'community-lead') {
                 $initialStatus = 'PRE_APPROVED'; // Community Lead applications go directly to pre-approved
-            } elseif ($user->role && $user->role->slug === 'super-admin-a') {
+            } elseif ($userRole === 'super-admin-a') {
                 $initialStatus = 'PRE_APPROVED'; // Super Admin A applications go directly to pre-approved
+            }
+            
+            // Validate that the user is authorized to apply for this barangay
+            $barangaySubmission = \App\Models\BarangaySubmission::find($request->barangay_submission_id);
+            
+            if (!$barangaySubmission || $barangaySubmission->status !== 'APPROVED') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The selected barangay is not approved or does not exist.',
+                    'errors' => ['barangay_submission_id' => ['Please select a valid approved barangay.']]
+                ], 422);
+            }
+            
+            // Authorization check based on user role
+            if ($userRole === 'area-admin') {
+                // Area Admin can only apply for barangays they personally applied for
+                if ($barangaySubmission->assigned_user_id !== $user->id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You are not authorized to apply for events in this barangay.',
+                        'errors' => ['barangay_submission_id' => ['You can only apply for events in barangays you personally applied for.']]
+                    ], 403);
+                }
+            } elseif ($userRole === 'community-lead') {
+                // Community Lead can apply for barangays under Area Admins assigned to them
+                $assignedAreaAdminIds = \App\Models\BarangaySubmission::where('reviewed_by', $user->id)
+                    ->whereNotNull('assigned_user_id')
+                    ->distinct()
+                    ->pluck('assigned_user_id')
+                    ->toArray();
+                
+                // Check if the barangay's assigned Area Admin is in the list of assigned Area Admins
+                if (empty($assignedAreaAdminIds) || !in_array($barangaySubmission->assigned_user_id, $assignedAreaAdminIds)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You are not authorized to apply for events in this barangay.',
+                        'errors' => ['barangay_submission_id' => ['You can only apply for events in barangays under Area Admins assigned to you.']]
+                    ], 403);
+                }
+            } elseif (!in_array($userRole, ['super-admin-a', 'super-admin-b', 'super-admin'])) {
+                // Other roles are not authorized
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to apply for events.',
+                    'errors' => ['authorization' => ['Your role does not have permission to apply for events.']]
+                ], 403);
             }
             
             // Create event application

@@ -383,40 +383,26 @@ export default function ApplyEvent({ approvedBarangays }: ApplyEventProps) {
                                         <label className="block text-white font-semibold text-sm uppercase tracking-wider">
                                             Event Location
                                         </label>
-                                        <div className="relative">
-                                            <select
-                                                value={formData.eventLocation}
-                                                onChange={(e) => handleInputChange('eventLocation', e.target.value)}
-                                                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white 
-                                                    focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
-                                                    transition-all duration-300 hover:bg-white/15"
-                                                required
-                                                style={{
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                                    color: 'white',
-                                                    WebkitAppearance: 'none',
-                                                    MozAppearance: 'none',
-                                                    appearance: 'none'
-                                                }}
-                                            >
-                                                <option value="">Select event location...</option>
-                                                {approvedBarangays.map((barangay) => (
-                                                    <option key={barangay.id} value={`${barangay.barangay_name}, ${barangay.municipality_name}, ${barangay.province_name}`} style={{ backgroundColor: '#1f2937', color: 'white' }}>
-                                                        {barangay.barangay_name}, {barangay.municipality_name}, {barangay.province_name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </div>
-                                        </div>
+                                        <input
+                                            type="text"
+                                            value={formData.eventLocation}
+                                            onChange={(e) => handleInputChange('eventLocation', e.target.value)}
+                                            placeholder="Enter event location..."
+                                            className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white 
+                                                placeholder-gray-400
+                                                focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 
+                                                transition-all duration-300 hover:bg-white/15"
+                                            required
+                                            style={{
+                                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                color: 'white'
+                                            }}
+                                        />
                                         <p className="text-yellow-400/80 text-xs flex items-center">
                                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
-                                            Select from your approved barangays only
+                                            Enter the specific location where the event will take place
                                         </p>
                                     </div>
                                     <div className="space-y-3">
