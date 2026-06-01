@@ -1,4 +1,6 @@
 *
 !private/
 !public/
+!location_data/
+!location_data/**
 !.gitignore
